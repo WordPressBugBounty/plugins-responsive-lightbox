@@ -467,11 +467,6 @@ class Responsive_Lightbox_Frontend {
 					$link = preg_replace( '/(<a.*?)>/s', '$1 data-featherlight="' . esc_attr( $args['content'] ) . '">', $link );
 					break;
 
-				case 'fancybox':
-					if ( $args['content'] === 'iframe' )
-						$link = preg_replace( '/(<a.*?href=(?:\'|"))(.*?)((?:\'|").*?>)/is', '$1' . add_query_arg( 'iframe', '', '$2' ) . '$3', $link );
-					break;
-
 				case 'prettyphoto':
 					if ( $args['content'] === 'iframe' )
 						$link = preg_replace( '/(<a.*?href=(?:\'|"))(.*?)((?:\'|").*?>)/is', '$1' . add_query_arg( [ 'iframe' => 'true', 'width' => (int) $args['settings']['width'], 'height' => (int) $args['settings']['height'] ], '$2' ) . '$3', $link );

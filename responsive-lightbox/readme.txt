@@ -3,8 +3,8 @@ Contributors: dfactory
 Donate link: http://www.dfactory.co/
 Tags: gallery, galleries, lightbox, image, images
 Requires at least: 5.0
-Tested up to: 6.6.1
-Stable tag: 2.4.8
+Tested up to: 6.6.2
+Stable tag: 2.4.9
 Requires PHP: 5.4
 License: MIT License
 License URI: http://opensource.org/licenses/MIT
@@ -73,7 +73,7 @@ Responsive Lightbox and Gallery plugin can be extended with our <a href="?utm_so
 
 * Powerful and easy-to-use gallery builder
 * 3 beautiful gallery templates - Grid, Slider and Masonry
-* 8 responsive lightbox scripts (SwipeBox, prettyPhoto, FancyBox, Nivo Lightbox, Image Lightbox, Tos "R" Us, Featherlight, Magnific Popup)
+* 7 responsive lightbox scripts (SwipeBox, prettyPhoto, Nivo Lightbox, Image Lightbox, Tos "R" Us, Featherlight, Magnific Popup)
 * Create galleries from Media Library or Post attached images
 * Media Folders with a drag & drop interface
 * Access to millions of images through Remote Library
@@ -140,11 +140,14 @@ Responsive Lightbox and Gallery plugin comes with many styles and effects alread
 
 == Changelog ==
 
+= 2.4.9 =
+* Fix: Potential XSS vulnerability related to Featherlight lightbox
+* Fix: Removed the vulnerable Fancybox 3.x script
+
 = 2.4.8 =
 * Fix: Flushing rewrite rules
 * Fix: Uploading remote library images
 * Fix: Potential XSS vulnerability related to Magnific Popup
-* Fix: Potential XSS vulnerability related to Featherlight lightbox
 * Tweak: Updated Magnific Popup to 1.2.0
 
 = 2.4.7 =
@@ -539,5 +542,5 @@ Initial release
 
 == Upgrade Notice ==
 
-= 2.4.8 =
-Multiple fixes - Flushing rewrite rules, Uploading remote library images, Potential XSS vulnerability related to Magnific Popup, Potential XSS vulnerability related to Featherlight lightbox
+= 2.4.9 =
+Fixed potential XSS vulnerability related to Featherlight and Fancybox lighboxes

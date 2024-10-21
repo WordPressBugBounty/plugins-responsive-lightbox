@@ -2,7 +2,7 @@
 /*
 Plugin Name: Responsive Lightbox & Gallery
 Description: Responsive Lightbox & Gallery allows users to create galleries and view larger versions of images, galleries and videos in a lightbox (overlay) effect optimized for mobile devices.
-Version: 2.4.8
+Version: 2.4.9
 Author: dFactory
 Author URI: http://www.dfactory.co/
 Plugin URI: http://www.dfactory.co/products/responsive-lightbox/
@@ -44,7 +44,7 @@ include_once( RESPONSIVE_LIGHTBOX_PATH . 'includes' . DIRECTORY_SEPARATOR . 'fun
  * Responsive Lightbox class.
  *
  * @class Responsive_Lightbox
- * @version	2.4.8
+ * @version	2.4.9
  */
 class Responsive_Lightbox {
 
@@ -121,33 +121,6 @@ class Responsive_Lightbox {
 				'overlay_gallery'			=> true,
 				'keyboard_shortcuts'		=> true,
 				'social'					=> false
-			],
-			'fancybox' => [
-				'modal'						=> false,
-				'show_overlay'				=> true,
-				'show_close_button'			=> true,
-				'enable_escape_button'		=> true,
-				'hide_on_overlay_click'		=> true,
-				'hide_on_content_click'		=> false,
-				'cyclic'					=> false,
-				'show_nav_arrows'			=> true,
-				'auto_scale'				=> true,
-				'scrolling'					=> 'yes',
-				'center_on_scroll'			=> true,
-				'opacity'					=> true,
-				'overlay_opacity'			=> 70,
-				'overlay_color'				=> '#666',
-				'title_show'				=> true,
-				'title_position'			=> 'outside',
-				'transitions'				=> 'fade',
-				'easings'					=> 'swing',
-				'speeds'					=> 300,
-				'change_speed'				=> 300,
-				'change_fade'				=> 100,
-				'padding'					=> 5,
-				'margin'					=> 5,
-				'video_width'				=> 1080,
-				'video_height'				=> 720
 			],
 			'nivo' => [
 				'effect'					=> 'fade',
@@ -1921,48 +1894,6 @@ class Responsive_Lightbox {
 						'videoMaxWidth'				=> $this->options['configuration']['swipebox']['video_max_width'],
 						'useSVG'					=> ! $this->options['configuration']['swipebox']['force_png_icons'],
 						'loopAtEnd'					=> $this->options['configuration']['swipebox']['loop_at_end']
-					]
-				);
-				break;
-
-			case 'fancybox':
-				wp_register_script( 'responsive-lightbox-fancybox', plugins_url( 'assets/fancybox/jquery.fancybox' . ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '.min' : '' ) . '.js', __FILE__ ), [ 'jquery' ], $this->defaults['version'], $this->options['settings']['loading_place'] === 'footer' );
-
-				wp_register_style(
-					'responsive-lightbox-fancybox', plugins_url( 'assets/fancybox/jquery.fancybox' . ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '.min' : '' ) . '.css', __FILE__ ), [], $this->defaults['version']
-				);
-
-				$scripts[] = 'responsive-lightbox-fancybox';
-				$styles[] = 'responsive-lightbox-fancybox';
-
-				$args = array_merge(
-					$args,
-					[
-						'modal'					=> $this->options['configuration']['fancybox']['modal'],
-						'showOverlay'			=> $this->options['configuration']['fancybox']['show_overlay'],
-						'showCloseButton'		=> $this->options['configuration']['fancybox']['show_close_button'],
-						'enableEscapeButton'	=> $this->options['configuration']['fancybox']['enable_escape_button'],
-						'hideOnOverlayClick'	=> $this->options['configuration']['fancybox']['hide_on_overlay_click'],
-						'hideOnContentClick'	=> $this->options['configuration']['fancybox']['hide_on_content_click'],
-						'cyclic'				=> $this->options['configuration']['fancybox']['cyclic'],
-						'showNavArrows'			=> $this->options['configuration']['fancybox']['show_nav_arrows'],
-						'autoScale'				=> $this->options['configuration']['fancybox']['auto_scale'],
-						'scrolling'				=> $this->options['configuration']['fancybox']['scrolling'],
-						'centerOnScroll'		=> $this->options['configuration']['fancybox']['center_on_scroll'],
-						'opacity'				=> $this->options['configuration']['fancybox']['opacity'],
-						'overlayOpacity'		=> $this->options['configuration']['fancybox']['overlay_opacity'],
-						'overlayColor'			=> $this->options['configuration']['fancybox']['overlay_color'],
-						'titleShow'				=> $this->options['configuration']['fancybox']['title_show'],
-						'titlePosition'			=> $this->options['configuration']['fancybox']['title_position'],
-						'transitions'			=> $this->options['configuration']['fancybox']['transitions'],
-						'easings'				=> $this->options['configuration']['fancybox']['easings'],
-						'speeds'				=> $this->options['configuration']['fancybox']['speeds'],
-						'changeSpeed'			=> $this->options['configuration']['fancybox']['change_speed'],
-						'changeFade'			=> $this->options['configuration']['fancybox']['change_fade'],
-						'padding'				=> $this->options['configuration']['fancybox']['padding'],
-						'margin'				=> $this->options['configuration']['fancybox']['margin'],
-						'videoWidth'			=> $this->options['configuration']['fancybox']['video_width'],
-						'videoHeight'			=> $this->options['configuration']['fancybox']['video_height']
 					]
 				);
 				break;
