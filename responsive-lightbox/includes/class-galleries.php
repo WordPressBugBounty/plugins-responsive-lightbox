@@ -528,6 +528,24 @@ class Responsive_Lightbox_Galleries {
 								'9' => sprintf( __( 'Effect %s', 'responsive-lightbox' ), 9 )
 							)
 						),
+						'caption_font_size' => array(
+							'title' => __( 'Caption Font Size', 'responsive-lightbox' ),
+							'type' => 'number',
+							'default' => 13,
+							'step' => 1,
+							'min' => 10,
+							'max' => 20,
+							'append' => 'px'
+						),
+						'caption_padding' => array(
+							'title' => __( 'Caption Padding', 'responsive-lightbox' ),
+							'type' => 'number',
+							'default' => 20,
+							'step' => 1,
+							'min' => 5,
+							'max' => 30,
+							'append' => 'px'
+						),
 						'title_color' => array(
 							'title' => __( 'Title Color', 'responsive-lightbox' ),
 							'type' => 'color_picker',

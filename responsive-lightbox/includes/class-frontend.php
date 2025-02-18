@@ -13,6 +13,19 @@ new Responsive_Lightbox_Frontend();
 class Responsive_Lightbox_Frontend {
 
 	public $gallery_no = 0;
+	
+	private $script_data = [
+		'gallery'		=> '',
+		'basicgrid'		=> '',
+		'basicslider'	=> '',
+		'basicmasonry'	=> ''
+	];
+	private $style_data = [
+		'gallery'		=> '',
+		'basicgrid'		=> '',
+		'basicslider'	=> '',
+		'basicmasonry'	=> ''
+	];
 
 	/**
 	 * Class constructor.
@@ -24,6 +37,7 @@ class Responsive_Lightbox_Frontend {
 		Responsive_Lightbox()->frontend = $this;
 
 		// actions
+		add_action( 'wp_enqueue_scripts', [ $this, 'wp_enqueue_scripts' ] );
 		add_action( 'wp_enqueue_scripts', [ $this, 'wp_dequeue_scripts' ], 100 );
 		add_action( 'rl_before_gallery', [ $this, 'before_gallery' ], 10, 2 );
 		add_action( 'rl_after_gallery', [ $this, 'after_gallery' ], 10, 2 );
@@ -1583,6 +1597,8 @@ class Responsive_Lightbox_Frontend {
 
 			// is it rl gallery? add design options
 			if ( $rl_gallery ) {
+				$gallery_no = $this->gallery_no;
+						
 				// get fields
 				$fields = $rl->galleries->get_data( 'fields' );
 
@@ -1606,36 +1622,37 @@ class Responsive_Lightbox_Frontend {
 
 				// get opacity
 				$opacity = (string) round( $atts['background_opacity'] / 100, 2 );
+		
+				// prepare style data
+				$style_data = '
+				#rl-gallery-container-' . $gallery_no . ' .rl-gallery .rl-gallery-link {
+					border: ' . (int) $atts['border_width'] . 'px solid ' . esc_attr( $atts['border_color'] ) . ';
+				}
+				#rl-gallery-container-' . $gallery_no . ' .rl-gallery .rl-gallery-link .rl-gallery-item-title {
+					color: ' . esc_attr( $atts['title_color'] ) . ';
+				}
+				#rl-gallery-container-' . $gallery_no . ' .rl-gallery .rl-gallery-link .rl-gallery-item-caption {
+					color: ' . esc_attr( $atts['caption_color'] ) . ';
+				}
+				#rl-gallery-container-' . $gallery_no . ' .rl-gallery .rl-gallery-link .rl-gallery-caption {
+					font-size: ' . absint( $atts['caption_font_size'] ) . 'px;
+					padding: ' . absint( $atts['caption_padding'] ) . 'px;
+				}
+				#rl-gallery-container-' . $gallery_no . ' .rl-gallery .rl-gallery-link .rl-gallery-caption,
+				#rl-gallery-container-' . $gallery_no . ' .rl-gallery .rl-gallery-link:after {
+					background-color: rgba( ' . esc_attr( $background_color ) . ', ' . esc_attr( $opacity ) . ' );
+				}
+				#rl-gallery-container-' . $gallery_no . ' [class^="rl-hover-icon-"] .rl-gallery-link:before,
+				#rl-gallery-container-' . $gallery_no . ' [class*=" rl-hover-icon-"] .rl-gallery-link:before {
+					color: ' . esc_attr( $atts['title_color'] ) . ';
+					background-color: rgba( ' . esc_attr( $background_color ) . ', ' . esc_attr( $opacity ) . ' );
+				}';
 
-				// add inline style
-				wp_add_inline_style(
-					'responsive-lightbox-gallery',
-					':root {
-						--rl-gallery-background_color: ' . esc_attr( $atts['background_color'] ) . ';
-						--rl-gallery-background_opacity: ' . esc_attr( $opacity ) . ';
-						--rl-gallery-border_color: ' . esc_attr( $atts['border_color'] ) . ';
-						--rl-gallery-title_color: ' . esc_attr( $atts['title_color'] ) . ';
-						--rl-gallery-caption_color: ' . esc_attr( $atts['caption_color'] ) . ';
-					}
-					.rl-gallery .rl-gallery-link {
-						border: ' . (int) $atts['border_width'] . 'px solid ' . esc_attr( $atts['border_color'] ) . ';
-					}
-					.rl-gallery .rl-gallery-link .rl-gallery-item-title {
-						color: ' . esc_attr( $atts['title_color'] ) . ';
-					}
-					.rl-gallery .rl-gallery-link .rl-gallery-item-caption {
-						color: ' . esc_attr( $atts['caption_color'] ) . ';
-					}
-					.rl-gallery .rl-gallery-link .rl-gallery-caption,
-					.rl-gallery .rl-gallery-link:after {
-						background-color: rgba( ' . esc_attr( $background_color ) . ', ' . esc_attr( $opacity ) . ' );
-					}
-					[class^="rl-hover-icon-"] .rl-gallery-link:before,
-					[class*=" rl-hover-icon-"] .rl-gallery-link:before {
-						color: ' . esc_attr( $atts['title_color'] ) . ';
-						background-color: rgba( ' . esc_attr( $background_color ) . ', ' . esc_attr( $opacity ) . ' );
-					}'
-				);
+				// load style data
+				$style_loaded = wp_add_inline_style( 'responsive-lightbox-gallery', $style_data );
+
+				if ( ! $style_loaded )
+					$this->style_data['gallery'] .= $style_data;
 			}
 		}
 
@@ -1964,7 +1981,7 @@ class Responsive_Lightbox_Frontend {
 		ob_start();
 
 		// $gallery_no and $rl_gallery_id are both integers ?>
-		<div class="rl-gallery-container<?php echo esc_attr( apply_filters( 'rl_gallery_container_class', '', $atts, $rl_gallery_id ) ); ?>" id="rl-gallery-container-<?php echo (int) $gallery_no; ?>" data-gallery_id="<?php echo (int) $rl_gallery_id; ?>">
+		<div class="rl-gallery-container <?php echo esc_attr( apply_filters( 'rl_gallery_container_class', '', $atts, $rl_gallery_id ) ); ?>" id="rl-gallery-container-<?php echo (int) $gallery_no; ?>" data-gallery_id="<?php echo (int) $rl_gallery_id; ?>">
 
 			<?php do_action( 'rl_before_gallery', $atts, $rl_gallery_id ); ?>
 
@@ -1987,37 +2004,36 @@ class Responsive_Lightbox_Frontend {
 
 		// styles
 		wp_enqueue_style( 'responsive-lightbox-basicgrid-gallery', plugins_url( 'css/gallery-basicgrid.css', dirname( __FILE__ ) ), [], $rl->defaults['version'] );
-
-		// add inline style
-		$inline_css = '
+		
+		// prepare style data
+		$style_data = '
+		#rl-gallery-container-' . $gallery_no . ' .rl-basicgrid-gallery .rl-gallery-item {
+			width: calc(' . (string) round( 100 / (int) $atts['columns'], 2 ) . '% - ' . (int) $atts['gutter'] . 'px);
+			margin: ' . (string) round( (int) $atts['gutter'] / 2, 2 ) . 'px;
+		}
+		@media all and (min-width: 1200px) {
 			#rl-gallery-container-' . $gallery_no . ' .rl-basicgrid-gallery .rl-gallery-item {
-				width: calc(' . (string) round( 100 / (int) $atts['columns'], 2 ) . '% - ' . (int) $atts['gutter'] . 'px);
-				margin: ' . (string) round( (int) $atts['gutter'] / 2, 2 ) . 'px;
+				width: calc(' . (string) round( 100 / (int) $atts['columns_lg'], 2 ) . '% - ' . (int) $atts['gutter'] . 'px);
 			}
-			@media all and (min-width: 1200px) {
-				#rl-gallery-container-' . $gallery_no . ' .rl-basicgrid-gallery .rl-gallery-item {
-					width: calc(' . (string) round( 100 / (int) $atts['columns_lg'], 2 ) . '% - ' . (int) $atts['gutter'] . 'px);
-				}
+		}
+		@media all and (min-width: 992px) and (max-width: 1200px) {
+			#rl-gallery-container-' . $gallery_no . ' .rl-basicgrid-gallery .rl-gallery-item {
+				width: calc(' . (string) round( 100 / (int) $atts['columns_md'], 2 ) . '% - ' . (int) $atts['gutter'] . 'px);
 			}
-			@media all and (min-width: 992px) and (max-width: 1200px) {
-				#rl-gallery-container-' . $gallery_no . ' .rl-basicgrid-gallery .rl-gallery-item {
-					width: calc(' . (string) round( 100 / (int) $atts['columns_md'], 2 ) . '% - ' . (int) $atts['gutter'] . 'px);
-				}
+		}
+		@media all and (min-width: 768px) and (max-width: 992px) {
+			#rl-gallery-container-' . $gallery_no . ' .rl-basicgrid-gallery .rl-gallery-item {
+				width: calc(' . (string) round( 100 / (int) $atts['columns_sm'], 2 ) . '% - ' . (int) $atts['gutter'] . 'px);
 			}
-			@media all and (min-width: 768px) and (max-width: 992px) {
-				#rl-gallery-container-' . $gallery_no . ' .rl-basicgrid-gallery .rl-gallery-item {
-					width: calc(' . (string) round( 100 / (int) $atts['columns_sm'], 2 ) . '% - ' . (int) $atts['gutter'] . 'px);
-				}
+		}
+		@media all and (max-width: 768px) {
+			#rl-gallery-container-' . $gallery_no . ' .rl-basicgrid-gallery .rl-gallery-item {
+				width: calc(' . (string) round( 100 / (int) $atts['columns_xs'], 2 ) . '% - ' . (int) $atts['gutter'] . 'px);
 			}
-			@media all and (max-width: 768px) {
-				#rl-gallery-container-' . $gallery_no . ' .rl-basicgrid-gallery .rl-gallery-item {
-					width: calc(' . (string) round( 100 / (int) $atts['columns_xs'], 2 ) . '% - ' . (int) $atts['gutter'] . 'px);
-				}
-			}
-		';
-
+		}';
+		
 		if ( $atts['force_height'] ) {
-			$inline_css .= '
+			$style_data .= '
 			#rl-gallery-container-' . $gallery_no . ' .rl-basicgrid-gallery .rl-gallery-item {
 				height: ' . (int) $atts['row_height'] . 'px;
 			}
@@ -2029,7 +2045,11 @@ class Responsive_Lightbox_Frontend {
 			}';
 		}
 
-		wp_add_inline_style( 'responsive-lightbox-basicgrid-gallery', $inline_css );
+		// load style data
+		$style_loaded = wp_add_inline_style( 'responsive-lightbox-basicgrid-gallery', $style_data );
+		
+		if ( ! $style_loaded )
+			$this->style_data['basicgrid'] .= $style_data;
 
 		// remove any new lines from the output so that the reader parses it better
 		return apply_filters( 'rl_gallery_shortcode_html', trim( preg_replace( '/\s+/', ' ', $gallery_html ) ), $atts, $rl_gallery_id );
@@ -2175,18 +2195,22 @@ class Responsive_Lightbox_Frontend {
 		ob_start();
 
 		// $gallery_no and $rl_gallery_id are both integers ?>
-		<div class="rl-gallery-container<?php echo esc_attr( apply_filters( 'rl_gallery_container_class', '', $atts, $rl_gallery_id ) ); ?>" id="rl-gallery-container-<?php echo (int) $gallery_no; ?>" data-gallery_id="<?php echo (int) $rl_gallery_id; ?>">
+		<div class="rl-gallery-container splide <?php echo esc_attr( apply_filters( 'rl_gallery_container_class', '', $atts, $rl_gallery_id ) ); ?>" id="rl-gallery-container-<?php echo (int) $gallery_no; ?>" data-gallery_id="<?php echo (int) $rl_gallery_id; ?>">
 
 			<?php do_action( 'rl_before_gallery', $atts, $rl_gallery_id ); ?>
 
-			<ul class="rl-gallery rl-basicslider-gallery <?php echo esc_attr( $atts['class'] ); ?>" id="rl-gallery-<?php echo (int) $gallery_no; ?>" data-gallery_no="<?php echo (int) $gallery_no; ?>">
+			<div class="rl-gallery rl-basicslider-gallery splide__track <?php echo esc_attr( $atts['class'] ); ?>" id="rl-gallery-<?php echo (int) $gallery_no; ?>" data-gallery_no="<?php echo (int) $gallery_no; ?>">
+				<ul class="splide__list">
 
-			<?php foreach ( $images as $image ) {
-				// $image['link'] is already escaped
-				echo '<li class="rl-gallery-item">' . $image['link'] . '</li>';
-			} ?>
+				<?php foreach ( $images as $image ) {
+					echo '
+					<li class="rl-gallery-item splide__slide" ' . implode( ' ', apply_filters( 'rl_gallery_item_extra_args', [], $atts, $image ) ) . ' data-thumb="' . $image['thumbnail_url'] . '">
+						' . $image['link'] . '
+					</li>';
+				} ?>
 
-			</ul>
+				</ul>
+			</div>
 
 			<?php do_action( 'rl_after_gallery', $atts, $rl_gallery_id ); ?>
 
@@ -2195,41 +2219,48 @@ class Responsive_Lightbox_Frontend {
 		<?php $gallery_html = ob_get_contents();
 
 		ob_end_clean();
+		
+		// enqueue scripts and styles
+		wp_enqueue_script( 'responsive-lightbox-basicslider-gallery' );
+		wp_enqueue_style( 'responsive-lightbox-basicslider-gallery' );
+		
+		// prepare style data
+		$style_data = '
+		#rl-gallery-container-' . $gallery_no . ' .rl-basicslider-gallery .rl-gallery-item img {
+			width: 100%;
+			height: auto;
+		}';
 
-		// scripts
-		wp_register_script( 'responsive-lightbox-basicslider-gallery-js', plugins_url( 'assets/slippry/slippry' . ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '.min' : '' ) . '.js', dirname( __FILE__ ) ), [ 'jquery' ], $rl->defaults['version'], ( $rl->options['settings']['loading_place'] === 'footer' ) );
-		wp_enqueue_script( 'responsive-lightbox-basicslider-gallery', plugins_url( 'js/front-basicslider.js', dirname( __FILE__ ) ), [ 'jquery', 'responsive-lightbox-basicslider-gallery-js' ], $rl->defaults['version'], ( $rl->options['settings']['loading_place'] === 'footer' ) );
-
-		// styles
-		wp_enqueue_style( 'responsive-lightbox-basicslider-gallery', plugins_url( 'assets/slippry/slippry' . ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '.min' : '' ) . '.css', dirname( __FILE__ ) ), [], $rl->defaults['version'] );
+		// load style data
+		$style_loaded = wp_add_inline_style( 'responsive-lightbox-basicslider-gallery', $style_data );
+		
+		if ( ! $style_loaded )
+			$this->style_data['basicslider'] .= $style_data;
 
 		// prepare script data
 		$script_data = [
-			'adaptive_height'		=> $atts['adaptive_height'],
-			'loop'					=> $atts['loop'],
-			'captions'				=> $atts['captions'],
-			'init_single'			=> $atts['init_single'],
-			'responsive'			=> $atts['responsive'],
-			'preload'				=> $atts['preload'],
-			'pager'					=> $atts['pager'],
-			'controls'				=> $atts['controls'],
-			'hide_on_end'			=> $atts['hide_on_end'],
-			'slide_margin'			=> $atts['slide_margin'],
-			'transition'			=> $atts['transition'],
-			'kenburns_zoom'			=> $atts['kenburns_zoom'],
+			'type'					=> $atts['slider_type'],
+			'height'				=> ( $atts['height'] > 0 ? $atts['height'] . 'px' : 0 ),
+			'width'					=> ( $atts['width'] > 0 ? $atts['width'] . '%' : 0 ),
 			'speed'					=> $atts['speed'],
-			'easing'				=> $atts['easing'],
-			'continuous'			=> $atts['continuous'],
-			'use_css'				=> $atts['use_css'],
-			'slideshow'				=> $atts['slideshow'],
-			'slideshow_direction'	=> $atts['slideshow_direction'],
-			'slideshow_hover'		=> $atts['slideshow_hover'],
-			'slideshow_hover_delay'	=> $atts['slideshow_hover_delay'],
-			'slideshow_delay'		=> $atts['slideshow_delay'],
-			'slideshow_pause'		=> $atts['slideshow_pause']
+			'gap'					=> $atts['gap'] . 'px',
+			'arrows'				=> $atts['arrows_navigation'],
+			'pagination'			=> $atts['dots_navigation'],
+			'drag'					=> $atts['drag'],
+			'autoplay'				=> $atts['autoplay'],
+			'interval'				=> $atts['interval'],
+			'wheel'					=> $atts['wheel'],
+			'perPage'				=> $atts['slides_per_page'],
+			'perMove'				=> $atts['slides_per_move'],
+			'start'					=> $atts['slides_start']
 		];
+		
+		// load script data
+		$script_data = 'var rlArgsBasicSliderGallery' . ( $gallery_no + 1 ) . ' = ' . json_encode( $script_data ) . ";\n";
+		$script_loaded = wp_add_inline_script( 'responsive-lightbox-basicslider-gallery', $script_data, 'before' );
 
-		wp_add_inline_script( 'responsive-lightbox-basicslider-gallery', 'var rlArgsBasicSliderGallery' . ( $gallery_no + 1 ) . ' = ' . wp_json_encode( $script_data ) . ";\n", 'before' );
+		if ( ! $script_loaded )
+			$this->script_data['basicslider'] .= $script_data;
 
 		// remove any new lines from the output so that the reader parses it better
 		return apply_filters( 'rl_gallery_shortcode_html', trim( preg_replace( '/\s+/', ' ', $gallery_html ) ), $atts, $rl_gallery_id );
@@ -2388,7 +2419,7 @@ class Responsive_Lightbox_Frontend {
 		ob_start();
 
 		// $gallery_no and $rl_gallery_id are both integers ?>
-		<div class="rl-gallery-container<?php echo esc_attr( apply_filters( 'rl_gallery_container_class', '', $atts, $rl_gallery_id ) ); ?>" id="rl-gallery-container-<?php echo (int) $gallery_no; ?>" data-gallery_id="<?php echo (int) $rl_gallery_id; ?>">
+		<div class="rl-gallery-container <?php echo esc_attr( apply_filters( 'rl_gallery_container_class', '', $atts, $rl_gallery_id ) ); ?>" id="rl-gallery-container-<?php echo (int) $gallery_no; ?>" data-gallery_id="<?php echo (int) $rl_gallery_id; ?>">
 
 			<?php do_action( 'rl_before_gallery', $atts, $rl_gallery_id ); ?>
 
@@ -2422,68 +2453,134 @@ class Responsive_Lightbox_Frontend {
 
 		ob_clean();
 
-		// scripts
-		wp_enqueue_script( 'responsive-lightbox-basicmasonry-gallery', plugins_url( 'js/front-basicmasonry.js', dirname( __FILE__ ) ), [ 'jquery', 'responsive-lightbox-masonry', 'responsive-lightbox-images-loaded' ], $rl->defaults['version'], ( $rl->options['settings']['loading_place'] === 'footer' ) );
-
-		// styles
-		wp_enqueue_style( 'responsive-lightbox-basicmasonry-gallery', plugins_url( 'css/gallery-basicmasonry.css', dirname( __FILE__ ) ), [], $rl->defaults['version'] );
-
-		// add inline style
-		wp_add_inline_style( 'responsive-lightbox-basicmasonry-gallery', '
-			#rl-gallery-container-' . $gallery_no . ' .rl-basicmasonry-gallery {
-				margin: ' . -(string) round( (int) $atts['margin'] / 2, 1 ) . 'px ' . -(string) round( (int) $atts['gutter'] / 2, 1 ) . 'px;
-				padding: ' . (int) $atts['margin'] . 'px 0;
-			}
-			#rl-gallery-container-' . $gallery_no . ' .rl-pagination-bottom {
-				margin-top: ' . ( (int) $atts['margin'] / 2 ) . 'px
-			}
-			#rl-gallery-container-' . $gallery_no . ' .rl-pagination-top {
-				margin-bottom: ' . ( (int) $atts['margin'] / 2 ) . 'px
-			}
+		// enqueue scripts and styles
+		wp_enqueue_script( 'responsive-lightbox-basicmasonry-gallery' );
+		wp_enqueue_style( 'responsive-lightbox-basicmasonry-gallery' );
+		
+		// prepare style data
+		$style_data = '
+		#rl-gallery-container-' . $gallery_no . ' .rl-basicmasonry-gallery {
+			margin: ' . -(string) round( (int) $atts['margin'] / 2, 1 ) . 'px ' . -(string) round( (int) $atts['gutter'] / 2, 1 ) . 'px;
+			padding: ' . (int) $atts['margin'] . 'px 0;
+		}
+		#rl-gallery-container-' . $gallery_no . ' .rl-pagination-bottom {
+			margin-top: ' . ( (int) $atts['margin'] / 2 ) . 'px
+		}
+		#rl-gallery-container-' . $gallery_no . ' .rl-pagination-top {
+			margin-bottom: ' . ( (int) $atts['margin'] / 2 ) . 'px
+		}
+		#rl-gallery-container-' . $gallery_no . ' .rl-basicmasonry-gallery .rl-gallery-item,
+		#rl-gallery-container-' . $gallery_no . ' .rl-basicmasonry-gallery .rl-grid-sizer {
+			width: calc(' . (string) round( 100 / (int) $atts['columns'], 2 ) . '% - ' . (int) $atts['gutter'] . 'px);
+			margin: ' . ( (int) $atts['margin'] / 2 ) . 'px ' . ( (int) $atts['gutter'] / 2 ) . 'px;
+		}
+		@media all and (min-width: 1200px) {
 			#rl-gallery-container-' . $gallery_no . ' .rl-basicmasonry-gallery .rl-gallery-item,
 			#rl-gallery-container-' . $gallery_no . ' .rl-basicmasonry-gallery .rl-grid-sizer {
-				width: calc(' . (string) round( 100 / (int) $atts['columns'], 2 ) . '% - ' . (int) $atts['gutter'] . 'px);
+				width: calc(' . (string) round( 100 / (int) $atts['columns_lg'], 2 ) . '% - ' . (int) $atts['gutter'] . 'px);
 				margin: ' . ( (int) $atts['margin'] / 2 ) . 'px ' . ( (int) $atts['gutter'] / 2 ) . 'px;
 			}
-			@media all and (min-width: 1200px) {
-				#rl-gallery-container-' . $gallery_no . ' .rl-basicmasonry-gallery .rl-gallery-item,
-				#rl-gallery-container-' . $gallery_no . ' .rl-basicmasonry-gallery .rl-grid-sizer {
-					width: calc(' . (string) round( 100 / (int) $atts['columns_lg'], 2 ) . '% - ' . (int) $atts['gutter'] . 'px);
-					margin: ' . ( (int) $atts['margin'] / 2 ) . 'px ' . ( (int) $atts['gutter'] / 2 ) . 'px;
-				}
+		}
+		@media all and (min-width: 992px) and (max-width: 1200px) {
+			#rl-gallery-container-' . $gallery_no . ' .rl-basicmasonry-gallery .rl-gallery-item,
+			#rl-gallery-container-' . $gallery_no . ' .rl-basicmasonry-gallery .rl-grid-sizer {
+				width: calc(' . (string) round( 100 / (int) $atts['columns_md'], 2 ) . '% - ' . (int) $atts['gutter'] . 'px);
+				margin: ' . ( (int) $atts['margin'] / 2 ) . 'px ' . ( (int) $atts['gutter'] / 2 ) . 'px;
 			}
-			@media all and (min-width: 992px) and (max-width: 1200px) {
-				#rl-gallery-container-' . $gallery_no . ' .rl-basicmasonry-gallery .rl-gallery-item,
-				#rl-gallery-container-' . $gallery_no . ' .rl-basicmasonry-gallery .rl-grid-sizer {
-					width: calc(' . (string) round( 100 / (int) $atts['columns_md'], 2 ) . '% - ' . (int) $atts['gutter'] . 'px);
-					margin: ' . ( (int) $atts['margin'] / 2 ) . 'px ' . ( (int) $atts['gutter'] / 2 ) . 'px;
-				}
+		}
+		@media all and (min-width: 768px) and (max-width: 992px) {
+			#rl-gallery-container-' . $gallery_no . ' .rl-basicmasonry-gallery .rl-gallery-item,
+			#rl-gallery-container-' . $gallery_no . ' .rl-basicmasonry-gallery .rl-grid-sizer {
+				width: calc(' . (string) round( 100 / (int) $atts['columns_sm'], 2 ) . '% - ' . (int) $atts['gutter'] . 'px);
+				margin: ' . ( (int) $atts['margin'] / 2 ) . 'px ' . ( (int) $atts['gutter'] / 2 ) . 'px;
 			}
-			@media all and (min-width: 768px) and (max-width: 992px) {
-				#rl-gallery-container-' . $gallery_no . ' .rl-basicmasonry-gallery .rl-gallery-item,
-				#rl-gallery-container-' . $gallery_no . ' .rl-basicmasonry-gallery .rl-grid-sizer {
-					width: calc(' . (string) round( 100 / (int) $atts['columns_sm'], 2 ) . '% - ' . (int) $atts['gutter'] . 'px);
-					margin: ' . ( (int) $atts['margin'] / 2 ) . 'px ' . ( (int) $atts['gutter'] / 2 ) . 'px;
-				}
+		}
+		@media all and (max-width: 768px) {
+			#rl-gallery-container-' . $gallery_no . ' .rl-basicmasonry-gallery .rl-gallery-item,
+			#rl-gallery-container-' . $gallery_no . ' .rl-basicmasonry-gallery .rl-grid-sizer {
+				width: calc(' . (string) round( 100 / (int) $atts['columns_xs'], 2 ) . '% - ' . (int) $atts['gutter'] . 'px);
+				margin: ' . ( (int) $atts['margin'] / 2 ) . 'px ' . ( (int) $atts['gutter'] / 2 ) . 'px;
 			}
-			@media all and (max-width: 768px) {
-				#rl-gallery-container-' . $gallery_no . ' .rl-basicmasonry-gallery .rl-gallery-item,
-				#rl-gallery-container-' . $gallery_no . ' .rl-basicmasonry-gallery .rl-grid-sizer {
-					width: calc(' . (string) round( 100 / (int) $atts['columns_xs'], 2 ) . '% - ' . (int) $atts['gutter'] . 'px);
-					margin: ' . ( (int) $atts['margin'] / 2 ) . 'px ' . ( (int) $atts['gutter'] / 2 ) . 'px;
-				}
-			}'
-		);
+		}';
+
+		// load style data
+		$style_loaded = wp_add_inline_style( 'responsive-lightbox-basicmasonry-gallery', $style_data );
+		
+		if ( ! $style_loaded )
+			$this->style_data['basicmasonry'] .= $style_data;
 
 		// prepare script data
 		$script_data = [
 			'originLeft'	=> $atts['origin_left'],
 			'originTop'		=> $atts['origin_top']
 		];
+		
+		// load script data
+		$script_data = 'var rlArgsBasicMasonryGallery' . ( $gallery_no + 1 ) . ' = ' . json_encode( $script_data ) . ";\n";
+		$script_loaded = wp_add_inline_script( 'responsive-lightbox-basicmasonry-gallery', $script_data, 'before' );
 
-		wp_add_inline_script( 'responsive-lightbox-basicmasonry-gallery', 'var rlArgsBasicMasonryGallery' . ( $gallery_no + 1 ) . ' = ' . wp_json_encode( $script_data ) . ";\n", 'before' );
+		if ( ! $script_loaded )
+			$this->script_data['basicmasonry'] .= $script_data;
 
 		// remove any new lines from the output so that the reader parses it better
 		return apply_filters( 'rl_gallery_shortcode_html', trim( preg_replace( '/\s+/', ' ', $gallery_html ) ), $atts, $rl_gallery_id );
+	}
+	
+	/**
+	 * Register frontend scripts.
+	 *
+	 * @return void
+	 */
+	public function wp_enqueue_scripts() {
+		// get main instance
+		$rl = Responsive_Lightbox();
+		
+		// gallery style
+		wp_register_style( 'responsive-lightbox-gallery', plugins_url( 'css/gallery.css', dirname( __FILE__ ) ), [], $rl->defaults['version'] );
+		
+		// load style data?
+		if ( ! empty( $this->style_data['gallery'] ) )
+			wp_add_inline_style( 'responsive-lightbox-basicgrid-gallery', $this->style_data['gallery'] );
+		
+		// Basic Grid
+		// styles
+		wp_register_style( 'responsive-lightbox-basicgrid-gallery', plugins_url( 'css/gallery-basicgrid.css', dirname( __FILE__ ) ), [], $rl->defaults['version'] );
+		
+		// load style data?
+		if ( ! empty( $this->style_data['basicgrid'] ) )
+			wp_add_inline_style( 'responsive-lightbox-basicgrid-gallery', $this->style_data['basicgrid'] );
+		
+		// Basic Slider
+		// scripts
+		wp_register_script( 'responsive-lightbox-basicslider',  plugins_url( 'assets/splide/splide.min.js', dirname( __FILE__ ) ), [], '4.1.4', $rl->options['settings']['loading_place'] === 'footer' );
+		wp_register_script( 'responsive-lightbox-basicslider-gallery', plugins_url( 'js/front-basicslider.js', dirname( __FILE__ ) ), [ 'jquery', 'responsive-lightbox-basicslider' ], $rl->defaults['version'], $rl->options['settings']['loading_place'] === 'footer' );
+
+		// load script data?
+		if ( ! empty( $this->script_data['basicslider'] ) )
+			wp_add_inline_script( 'responsive-lightbox-basicslider-gallery', $this->script_data['basicslider'], 'before' );
+
+		// styles
+		wp_register_style( 'responsive-lightbox-basicslider-gallery', plugins_url( 'assets/splide/splide.min.css', dirname( __FILE__ ) ), [], '4.1.4' );
+
+		// load style data?
+		if ( ! empty( $this->style_data['basicslider'] ) )
+			wp_add_inline_style( 'responsive-lightbox-basicslider-gallery', $this->style_data['basicslider'] );
+		
+		// Basic Masonry
+		// scripts
+		wp_register_script( 'responsive-lightbox-images-loaded', plugins_url( 'assets/imagesloaded/imagesloaded.pkgd' . ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '.min' : '' ) . '.js', dirname( __FILE__ ) ), [ 'jquery' ], '5.0.0' );
+		wp_register_script( 'responsive-lightbox-masonry', plugins_url( 'assets/masonry/masonry.pkgd' . ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '.min' : '' ) . '.js', dirname( __FILE__ ) ), [ 'jquery' ], '4.2.2', $rl->options['settings']['loading_place'] === 'footer' );
+		wp_register_script( 'responsive-lightbox-basicmasonry-gallery', plugins_url( 'js/front-basicmasonry.js', dirname( __FILE__ ) ), [ 'jquery', 'responsive-lightbox-masonry', 'responsive-lightbox-images-loaded' ], $rl->defaults['version'], ( $rl->options['settings']['loading_place'] === 'footer' ) );
+		
+		// load script data?
+		if ( ! empty( $this->script_data['basicmasonry'] ) )
+			wp_add_inline_script( 'responsive-lightbox-basicmasonry-gallery', $this->script_data['basicmasonry'], 'before' );
+
+		// styles
+		wp_register_style( 'responsive-lightbox-basicmasonry-gallery', plugins_url( 'css/gallery-basicmasonry.css', dirname( __FILE__ ) ), [], $rl->defaults['version'] );
+		
+		// load style data?
+		if ( ! empty( $this->style_data['basicmasonry'] ) )
+			wp_add_inline_style( 'responsive-lightbox-basicmasonry-gallery', $this->style_data['basicmasonry'] );
 	}
 }

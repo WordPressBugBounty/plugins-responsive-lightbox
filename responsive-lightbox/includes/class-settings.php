@@ -622,203 +622,107 @@ class Responsive_Lightbox_Settings {
 				],
 				'prefix' => 'rl',
 				'fields' => [
-					'adaptive_height' => [
-						'title' => __( 'Adaptive Height', 'responsive-lightbox' ),
-						'section' => 'responsive_lightbox_basicslider_gallery',
-						'type' => 'boolean',
-						'label' => __( 'The slider height should change on the fly according to the current slide.', 'responsive-lightbox' )
-					],
-					'loop' => [
-						'title' => __( 'Loop', 'responsive-lightbox' ),
-						'section' => 'responsive_lightbox_basicslider_gallery',
-						'type' => 'boolean',
-						'label' => __( 'Whether the slider should loop (i.e. the first slide goes to the last, the last slide goes to the first).', 'responsive-lightbox' )
-					],
-					'captions' => [
-						'title' => __( 'Captions Position', 'responsive-lightbox' ),
+					'slider_type' => [
+						'title' => __( 'Slider Type', 'responsive-lightbox' ),
 						'section' => 'responsive_lightbox_basicslider_gallery',
 						'type' => 'select',
-						'description' => __( 'Specifies the position of captions or no captions at all.', 'responsive-lightbox' ),
+						'label' => __( 'The type of the slider.', 'responsive-lightbox' ),
 						'options' => [
-							'none' => __( 'None', 'responsive-lightbox' ),
-							'overlay' => __( 'Overlay', 'responsive-lightbox' ),
-							'below' => __( 'Below', 'responsive-lightbox' )
+							'slide' => __( 'Slide', 'responsive-lightbox' ),
+							'loop' => __( 'Loop', 'responsive-lightbox' ),
+							'fade' => __( 'Fade', 'responsive-lightbox' )
 						]
 					],
-					'init_single' => [
-						'title' => __( 'Single Image Slider', 'responsive-lightbox' ),
-						'section' => 'responsive_lightbox_basicslider_gallery',
-						'type' => 'boolean',
-						'label' => __( 'Whether the slider should initialize even if there is only one slide element.', 'responsive-lightbox' )
-					],
-					'responsive' => [
-						'title' => __( 'Responsive', 'responsive-lightbox' ),
-						'section' => 'responsive_lightbox_basicslider_gallery',
-						'type' => 'boolean',
-						'label' => __( 'Whether the slider should be responsive.', 'responsive-lightbox' )
-					],
-					'preload' => [
-						'title' => __( 'Preload', 'responsive-lightbox' ),
-						'section' => 'responsive_lightbox_basicslider_gallery',
-						'type' => 'select',
-						'description' => __( 'Elements that are preloaded before slider shows.', 'responsive-lightbox' ),
-						'options' => [
-							'all' => __( 'All', 'responsive-lightbox' ),
-							'visible' => __( 'Only visible', 'responsive-lightbox' )
-						]
-					],
-					'pager' => [
-						'title' => __( 'Pager', 'responsive-lightbox' ),
-						'section' => 'responsive_lightbox_basicslider_gallery',
-						'type' => 'boolean',
-						'label' => __( 'Whether the slider should have a pager.', 'responsive-lightbox' )
-					],
-					'controls' => [
-						'title' => __( 'Controls', 'responsive-lightbox' ),
-						'section' => 'responsive_lightbox_basicslider_gallery',
-						'type' => 'boolean',
-						'label' => __( 'Whether the slider should have controls (next, previous arrows).', 'responsive-lightbox' )
-					],
-					'hide_on_end' => [
-						'title' => __( 'Hide Controls on End', 'responsive-lightbox' ),
-						'section' => 'responsive_lightbox_basicslider_gallery',
-						'type' => 'boolean',
-						'label' => __( 'Hide the previous or next control when it reaches the first or last slide respectively.', 'responsive-lightbox' )
-					],
-					'slide_margin' => [
-						'title' => __( 'Slide Margin', 'responsive-lightbox' ),
+					'height' => [
+						'title' => __( 'Height', 'responsive-lightbox' ),
 						'section' => 'responsive_lightbox_basicslider_gallery',
 						'type' => 'number',
 						'min' => 0,
-						'description' => __( 'The spacing between slides.', 'responsive-lightbox' ),
-						'append' => '%'
+						'description' => __( 'Defines the carousel max width in percentage. If set to 0 slider will adapt to slides width.', 'responsive-lightbox' ),
+						'append' => 'px'
 					],
-					'transition' => [
-						'title' => __( 'Transition', 'responsive-lightbox' ),
-						'section' => 'responsive_lightbox_basicslider_gallery',
-						'type' => 'select',
-						'description' => __( 'Transition type to use, or no transitions.', 'responsive-lightbox' ),
-						'options' => [
-							'none' => __( 'None', 'responsive-lightbox' ),
-							'fade' => __( 'Fade', 'responsive-lightbox' ),
-							'horizontal' => __( 'Horizontal', 'responsive-lightbox' ),
-							'vertical' => __( 'Vertical', 'responsive-lightbox' ),
-							'kenburns' => __( 'Ken Burns', 'responsive-lightbox' )
-						]
-					],
-					'kenburns_zoom' => [
-						'title' => __( 'Ken Burns Zoom', 'responsive-lightbox' ),
+					'width' => [
+						'title' => __( 'Width', 'responsive-lightbox' ),
 						'section' => 'responsive_lightbox_basicslider_gallery',
 						'type' => 'number',
 						'min' => 0,
-						'description' => __( 'Max zoom level use for the Ken Burns transition.', 'responsive-lightbox' ),
+						'description' => __( 'Defines the slide height in pixels. If set to 0, slider height will adapt to slides height.', 'responsive-lightbox' ),
 						'append' => '%'
 					],
 					'speed' => [
-						'title' => __( 'Transition Speed', 'responsive-lightbox' ),
+						'title' => __( 'Animation Speed', 'responsive-lightbox' ),
+						'section' => 'responsive_lightbox_basicslider_gallery',
+						'type' => 'number',
+						'min' => 400,
+						'description' => __( 'The transition speed in milliseconds.', 'responsive-lightbox' ),
+						'append' => 'ms'
+					],
+					'gap' => [
+						'title' => __( 'Slides Gap', 'responsive-lightbox' ),
+						'section' => 'responsive_lightbox_basicslider_gallery',
+						'type' => 'number',
+						'min' => 20,
+						'description' => __( 'The gap between slides.', 'responsive-lightbox' ),
+						'append' => 'px'
+					],
+					'arrows_navigation' => [
+						'title' => __( 'Arrows Navigtion', 'responsive-lightbox' ),
+						'section' => 'responsive_lightbox_basicslider_gallery',
+						'type' => 'boolean',
+						'label' => __( 'Determines whether to create arrows or not.', 'responsive-lightbox' )
+					],
+					'dots_navigation' => [
+						'title' => __( 'Dots Navigtion', 'responsive-lightbox' ),
+						'section' => 'responsive_lightbox_basicslider_gallery',
+						'type' => 'boolean',
+						'label' => __( 'Determines whether to create pagination (indicator dots) or not.', 'responsive-lightbox' )
+					],
+					'drag' => [
+						'title' => __( 'Drag', 'responsive-lightbox' ),
+						'section' => 'responsive_lightbox_basicslider_gallery',
+						'type' => 'boolean',
+						'label' => __( 'Determines whether to allow the user to drag the carousel or not.', 'responsive-lightbox' )
+					],
+					'autoplay' => [
+						'title' => __( 'Autoplay', 'responsive-lightbox' ),
+						'section' => 'responsive_lightbox_basicslider_gallery',
+						'type' => 'boolean',
+						'label' => __( 'Determines whether to enable autoplay or not.', 'responsive-lightbox' )
+					],
+					'interval' => [
+						'title' => __( 'Interval', 'responsive-lightbox' ),
+						'section' => 'responsive_lightbox_basicslider_gallery',
+						'type' => 'number',
+						'min' => 1000,
+						'description' => __( 'The autoplay interval duration in milliseconds.', 'responsive-lightbox' ),
+						'append' => 'ms'
+					],
+					'wheel' => [
+						'title' => __( 'Mouse wheel', 'responsive-lightbox' ),
+						'section' => 'responsive_lightbox_basicslider_gallery',
+						'type' => 'boolean',
+						'label' => __( 'Determines whether to enable navigation by the mouse wheel.', 'responsive-lightbox' )
+					],
+					'slides_per_page' => [
+						'title' => __( 'Per Page', 'responsive-lightbox' ),
+						'section' => 'responsive_lightbox_basicslider_gallery',
+						'type' => 'number',
+						'min' => 1,
+						'description' => __( 'Determines the number of slides to display in a page.', 'responsive-lightbox' )
+					],
+					'slides_per_move' => [
+						'title' => __( 'Per Move', 'responsive-lightbox' ),
+						'section' => 'responsive_lightbox_basicslider_gallery',
+						'type' => 'number',
+						'min' => 1,
+						'description' => __( 'Determines the number of slides to move at once.', 'responsive-lightbox' )
+					],
+					'slides_start' => [
+						'title' => __( 'Start', 'responsive-lightbox' ),
 						'section' => 'responsive_lightbox_basicslider_gallery',
 						'type' => 'number',
 						'min' => 0,
-						'description' => __( 'The time the transition takes to complete.', 'responsive-lightbox' ),
-						'append' => 'ms'
-					],
-					'easing' => [
-						'title' => __( 'Easing Effect', 'responsive-lightbox' ),
-						'section' => 'responsive_lightbox_basicslider_gallery',
-						'type' => 'select',
-						'description' => __( 'The easing effect to use for the selected transition.', 'responsive-lightbox' ),
-						'options' => [
-							'linear' => 'linear',
-							'swing' => 'swing',
-							'easeInQuad' => 'easeInQuad',
-							'easeOutQuad' => 'easeOutQuad',
-							'easeInOutQuad' => 'easeInOutQuad',
-							'easeInCubic' => 'easeInCubic',
-							'easeOutCubic' => 'easeOutCubic',
-							'easeInOutCubic' => 'easeInOutCubic',
-							'easeInQuart' => 'easeInQuart',
-							'easeOutQuart' => 'easeOutQuart',
-							'easeInOutQuart' => 'easeInOutQuart',
-							'easeInQuint' => 'easeInQuint',
-							'easeOutQuint' => 'easeOutQuint',
-							'easeInOutQuint' => 'easeInOutQuint',
-							'easeInExpo' => 'easeInExpo',
-							'easeOutExpo' => 'easeOutExpo',
-							'easeInOutExpo' => 'easeInOutExpo',
-							'easeInSine' => 'easeInSine',
-							'easeOutSine' => 'easeOutSine',
-							'easeInOutSine' => 'easeInOutSine',
-							'easeInCirc' => 'easeInCirc',
-							'easeOutCirc' => 'easeOutCirc',
-							'easeInOutCirc' => 'easeInOutCirc',
-							'easeInElastic' => 'easeInElastic',
-							'easeOutElastic' => 'easeOutElastic',
-							'easeInOutElastic' => 'easeInOutElastic',
-							'easeInBack' => 'easeInBack',
-							'easeOutBack' => 'easeOutBack',
-							'easeInOutBack' => 'easeInOutBack',
-							'easeInBounce' => 'easeInBounce',
-							'easeOutBounce' => 'easeOutBounce',
-							'easeInOutBounce' => 'easeInOutBounce'
-						]
-					],
-					'continuous' => [
-						'title' => __( 'Continuous', 'responsive-lightbox' ),
-						'section' => 'responsive_lightbox_basicslider_gallery',
-						'type' => 'boolean',
-						'label' => __( 'Whether the slider should run continuously (seamless transition between the first and last slides).', 'responsive-lightbox' )
-					],
-					'use_css' => [
-						'title' => __( 'Use CSS', 'responsive-lightbox' ),
-						'section' => 'responsive_lightbox_basicslider_gallery',
-						'type' => 'boolean',
-						'label' => __( 'Whether the slider should use CSS transitions. If the user\'s browser doesn\'t support CSS transitions the slider will fallback to jQuery.', 'responsive-lightbox' )
-					],
-					'slideshow' => [
-						'title' => __( 'Slideshow', 'responsive-lightbox' ),
-						'section' => 'responsive_lightbox_basicslider_gallery',
-						'type' => 'boolean',
-						'label' => __( 'Whether the slider should run automatically on load.', 'responsive-lightbox' )
-					],
-					'slideshow_direction' => [
-						'title' => __( 'Slideshow Direction', 'responsive-lightbox' ),
-						'section' => 'responsive_lightbox_basicslider_gallery',
-						'type' => 'select',
-						'description' => __( 'Which direction the slider should move in if in slideshow mode.', 'responsive-lightbox' ),
-						'options' => [
-							'next' => __( 'Next', 'responsive-lightbox' ),
-							'prev' => __( 'Previous', 'responsive-lightbox' )
-						]
-					],
-					'slideshow_hover' => [
-						'title' => __( 'Slideshow Hover', 'responsive-lightbox' ),
-						'section' => 'responsive_lightbox_basicslider_gallery',
-						'type' => 'boolean',
-						'label' => __( 'Whether the slideshow should pause automatically on hover.', 'responsive-lightbox' )
-					],
-					'slideshow_hover_delay' => [
-						'title' => __( 'Slideshow Hover Delay', 'responsive-lightbox' ),
-						'section' => 'responsive_lightbox_basicslider_gallery',
-						'type' => 'number',
-						'min' => 0,
-						'description' => __( 'The delay (if any) before the slider resumes automatically after hover.', 'responsive-lightbox' ),
-						'append' => 'ms'
-					],
-					'slideshow_delay' => [
-						'title' => __( 'Slideshow Delay', 'responsive-lightbox' ),
-						'section' => 'responsive_lightbox_basicslider_gallery',
-						'type' => 'number',
-						'min' => 0,
-						'description' => __( 'The delay (if any) before the slider runs automatically on load.', 'responsive-lightbox' ),
-						'append' => 'ms'
-					],
-					'slideshow_pause' => [
-						'title' => __( 'Slideshow Pause', 'responsive-lightbox' ),
-						'section' => 'responsive_lightbox_basicslider_gallery',
-						'type' => 'number',
-						'min' => 0,
-						'description' => __( 'The time a slide lasts.', 'responsive-lightbox' ),
-						'append' => 'ms'
+						'description' => __( 'Defines the start index.', 'responsive-lightbox' )
 					]
 				]
 			],

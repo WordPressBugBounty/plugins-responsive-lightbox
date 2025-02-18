@@ -2,7 +2,7 @@
 /*
 Plugin Name: Responsive Lightbox & Gallery
 Description: Responsive Lightbox & Gallery allows users to create galleries and view larger versions of images, galleries and videos in a lightbox (overlay) effect optimized for mobile devices.
-Version: 2.4.9
+Version: 2.5.0
 Author: dFactory
 Author URI: http://www.dfactory.co/
 Plugin URI: http://www.dfactory.co/products/responsive-lightbox/
@@ -12,7 +12,7 @@ Text Domain: responsive-lightbox
 Domain Path: /languages
 
 Responsive Lightbox & Gallery
-Copyright (C) 2013-2024, Digital Factory - info@digitalfactory.pl
+Copyright (C) 2013-2025, Digital Factory - info@digitalfactory.pl
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -44,7 +44,7 @@ include_once( RESPONSIVE_LIGHTBOX_PATH . 'includes' . DIRECTORY_SEPARATOR . 'fun
  * Responsive Lightbox class.
  *
  * @class Responsive_Lightbox
- * @version	2.4.9
+ * @version	2.5.0
  */
 class Responsive_Lightbox {
 
@@ -245,28 +245,20 @@ class Responsive_Lightbox {
 			'row_height'		=> 150
 		],
 		'basicslider_gallery' => [
-			'adaptive_height'		=> true,
-			'loop'					=> false,
-			'captions'				=> 'overlay',
-			'init_single'			=> true,
-			'responsive'			=> true,
-			'preload'				=> 'visible',
-			'pager'					=> true,
-			'controls'				=> true,
-			'hide_on_end'			=> true,
-			'slide_margin'			=> 0,
-			'transition'			=> 'fade',
-			'kenburns_zoom'			=> 120,
-			'speed'					=> 800,
-			'easing'				=> 'swing',
-			'continuous'			=> true,
-			'use_css'				=> true,
-			'slideshow'				=> true,
-			'slideshow_direction'	=> 'next',
-			'slideshow_hover'		=> true,
-			'slideshow_hover_delay'	=> 100,
-			'slideshow_delay'		=> 500,
-			'slideshow_pause'		=> 3000
+			'slider_type'			=> 'slide',
+			'height'				=> 0,
+			'width'					=> 0,
+			'speed'					=> 400,
+			'gap'					=> 20, // px
+			'arrows_navigation'		=> true,
+			'dots_navigation'		=> true,
+			'drag'					=> true,
+			'autoplay'				=> false,
+			'interval'				=> 3000,
+			'wheel'					=> false,
+			'slides_per_page'		=> 1,
+			'slides_per_move'		=> 1,
+			'slides_start'			=> 0
 		],
 		'basicmasonry_gallery' => [
 			'columns_lg'		=> 4,
@@ -278,7 +270,7 @@ class Responsive_Lightbox {
 			'origin_left'		=> true,
 			'origin_top'		=> true
 		],
-		'version' => '2.4.8',
+		'version' => '2.5.0',
 		'activation_date' => ''
 	];
 	public $options = [];
@@ -2062,9 +2054,7 @@ class Responsive_Lightbox {
 
 		if ( ! empty( $args['script'] ) && ! empty( $args['selector'] ) && apply_filters( 'rl_lightbox_conditional_loading', $contitional_scripts ) != false ) {
 			wp_register_script( 'responsive-lightbox-infinite-scroll', RESPONSIVE_LIGHTBOX_URL . '/assets/infinitescroll/infinite-scroll.pkgd' . ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '.min' : '' ) . '.js', [ 'jquery' ] );
-			wp_register_script( 'responsive-lightbox-images-loaded', RESPONSIVE_LIGHTBOX_URL . '/assets/imagesloaded/imagesloaded.pkgd' . ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '.min' : '' ) . '.js', [ 'jquery' ] );
-			wp_register_script( 'responsive-lightbox-masonry', RESPONSIVE_LIGHTBOX_URL . '/assets/masonry/masonry.pkgd' . ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '.min' : '' ) . '.js', [ 'jquery' ], $this->defaults['version'], $this->options['settings']['loading_place'] === 'footer' );
-
+	
 			wp_register_script( 'responsive-lightbox', plugins_url( 'js/front.js', __FILE__ ), [ 'jquery', 'underscore', 'responsive-lightbox-infinite-scroll' ], $this->defaults['version'], $this->options['settings']['loading_place'] === 'footer' );
 
 			$args['woocommerce_gallery'] = false;

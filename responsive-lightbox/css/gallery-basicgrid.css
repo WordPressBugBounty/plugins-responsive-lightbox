@@ -1,5 +1,5 @@
 .rl-basicgrid-gallery {
-	display: flex;
+    display: flex;
     flex-wrap: wrap;
     flex-direction: row;
 }
@@ -7,14 +7,15 @@
     content: '';
     flex-grow: 999999999;
     min-width: 300px;
-    height: 0; 
+    height: 0;
 }
 .rl-basicgrid-gallery .rl-gallery-item {
-	text-decoration: none !important;
-	box-shadow: none !important;
-	text-align: center;
+    text-decoration: none !important;
+    box-shadow: none !important;
+    text-align: center;
 }
 .rl-basicgrid-gallery .rl-gallery-item img {
-	max-width: 100%;
-	display: inline-block;
+    max-width: 100%;
+    height: auto;
+    display: inline-block;
 }
