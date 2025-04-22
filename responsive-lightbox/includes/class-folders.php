@@ -1034,7 +1034,7 @@ class Responsive_Lightbox_Folders {
 
 			// include styles
 			wp_enqueue_style( 'responsive-lightbox-folders-admin-css', RESPONSIVE_LIGHTBOX_URL . '/css/admin-folders.css' );
-			wp_enqueue_style( 'responsive-lightbox-folders-perfect-scrollbar', RESPONSIVE_LIGHTBOX_URL . '/assets/perfect-scrollbar/perfect-scrollbar' . ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '.min' : '' ) . '.css' );
+			wp_enqueue_style( 'responsive-lightbox-folders-perfect-scrollbar', RESPONSIVE_LIGHTBOX_URL . '/assets/perfect-scrollbar/perfect-scrollbar' . ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '.min' : '' ) . '.css', [], '1.5.3' );
 			wp_enqueue_style( 'responsive-lightbox-folders-jstree', RESPONSIVE_LIGHTBOX_URL . '/assets/jstree/themes/default/style' . ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '.min' : '' ) . '.css' );
 
 			// get color scheme global
@@ -1213,8 +1213,8 @@ class Responsive_Lightbox_Folders {
 			</ul>';
 
 			// register scripts
-			wp_register_script( 'responsive-lightbox-folders-jstree', RESPONSIVE_LIGHTBOX_URL . '/assets/jstree/jstree' . ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '.min' : '' ) . '.js', [], $rl->defaults['version'], false );
-			wp_register_script( 'responsive-lightbox-folders-perfect-scrollbar', RESPONSIVE_LIGHTBOX_URL . '/assets/perfect-scrollbar/perfect-scrollbar' . ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '.min' : '' ) . '.js', [], $rl->defaults['version'], false );
+			wp_register_script( 'responsive-lightbox-folders-jstree', RESPONSIVE_LIGHTBOX_URL . '/assets/jstree/jstree' . ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '.min' : '' ) . '.js', [], '3.3.16', false );
+			wp_register_script( 'responsive-lightbox-folders-perfect-scrollbar', RESPONSIVE_LIGHTBOX_URL . '/assets/perfect-scrollbar/perfect-scrollbar' . ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '.min' : '' ) . '.js', [], '1.5.3', false );
 
 			$dependencies[] = 'responsive-lightbox-folders-jstree';
 			$dependencies[] = 'responsive-lightbox-folders-perfect-scrollbar';

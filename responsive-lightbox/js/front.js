@@ -398,9 +398,19 @@
 
 					if ( ! title )
 						title = '';
+					else {
+						title = title.replace( /[^]/g, function( c ) {
+							return '&#' + c.charCodeAt( 0 ) + ';';
+						} );
+					}
 
 					if ( ! caption )
 						caption = '';
+					else {
+						caption = caption.replace( /[^]/g, function( c ) {
+							return '&#' + c.charCodeAt( 0 ) + ';';
+						} );
+					}
 
 					// set description
 					el.attr( 'title', caption );
