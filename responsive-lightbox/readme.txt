@@ -3,8 +3,8 @@ Contributors: dfactory
 Donate link: http://www.dfactory.co/
 Tags: gallery, galleries, lightbox, image, images
 Requires at least: 5.0
-Tested up to: 6.8
-Stable tag: 2.5.1
+Tested up to: 6.8.1
+Stable tag: 2.5.2
 Requires PHP: 5.6
 License: MIT License
 License URI: http://opensource.org/licenses/MIT
@@ -139,6 +139,12 @@ Responsive Lightbox and Gallery plugin comes with many styles and effects alread
 2. screenshot-2.jpg
 
 == Changelog ==
+
+= 2.5.2 =
+* Fix: XSS vulnerability related to Swipebox lightbox
+* Fix: Issue with folders display in grid mode
+* Tweak: Add missing text strings for galleries
+* Tweak: Updated jsTree to 3.3.17
 
 = 2.5.1 =
 * Fix: Loading textdomain warning
@@ -553,5 +559,5 @@ Initial release
 
 == Upgrade Notice ==
 
-= 2.5.1 =
-Fix loading textdomain warning and XSS vulnerability related to prettyPhoto
+= 2.5.2 =
+Fix XSS vulnerability related to Swipebox lightbox

@@ -718,6 +718,9 @@
 				}
 
 				if ( title ) {
+					title = title.replace( /[^]/g, function( c ) {
+						return '&#' + c.charCodeAt( 0 ) + ';';
+					} );
 					$( '#swipebox-top-bar' ).show();
 					$( '#swipebox-title' ).append( title );
 				} else {

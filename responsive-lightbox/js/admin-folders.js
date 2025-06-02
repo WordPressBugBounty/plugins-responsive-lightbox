@@ -238,7 +238,7 @@
 			// grid
 			} else {
 				// add tree
-				$( '#wp-media-grid .error' ).after( rlFoldersArgs.template );
+				$( '#wp-media-grid' ).append( rlFoldersArgs.template );
 
 				initFolders();
 			}

@@ -2,7 +2,7 @@
 /*
 Plugin Name: Responsive Lightbox & Gallery
 Description: Responsive Lightbox & Gallery allows users to create galleries and view larger versions of images, galleries and videos in a lightbox (overlay) effect optimized for mobile devices.
-Version: 2.5.1
+Version: 2.5.2
 Author: dFactory
 Author URI: http://www.dfactory.co/
 Plugin URI: http://www.dfactory.co/products/responsive-lightbox/
@@ -44,7 +44,7 @@ include_once( RESPONSIVE_LIGHTBOX_PATH . 'includes' . DIRECTORY_SEPARATOR . 'fun
  * Responsive Lightbox class.
  *
  * @class Responsive_Lightbox
- * @version	2.5.1
+ * @version	2.5.2
  */
 class Responsive_Lightbox {
 
@@ -270,7 +270,7 @@ class Responsive_Lightbox {
 			'origin_left'		=> true,
 			'origin_top'		=> true
 		],
-		'version' => '2.5.1',
+		'version' => '2.5.2',
 		'activation_date' => ''
 	];
 	public $options = [];
@@ -671,10 +671,10 @@ class Responsive_Lightbox {
 	public function plugins_loaded_init() {
 		// set gallery types
 		$this->gallery_types = [
-			'default'		=> '',
-			'basicgrid'		=> '',
-			'basicslider'	=> '',
-			'basicmasonry'	=> ''
+			'default'		=> 'Default',
+			'basicgrid'		=> 'Basic Grid',
+			'basicslider'	=> 'Basic Slider',
+			'basicmasonry'	=> 'Basic Masonry'
 		];
 
 		// only for backend
@@ -722,19 +722,19 @@ class Responsive_Lightbox {
 
 			// set capabilities with labels
 			$this->capabilities = [
-				'publish_galleries'				=> '',
-				'edit_galleries'				=> '',
-				'edit_published_galleries'		=> '',
-				'edit_others_galleries'			=> '',
-				'edit_private_galleries'		=> '',
-				'delete_galleries'				=> '',
-				'delete_published_galleries'	=> '',
-				'delete_others_galleries'		=> '',
-				'delete_private_galleries'		=> '',
-				'read_private_galleries'		=> '',
-				'manage_gallery_categories'		=> '',
-				'manage_gallery_tags'			=> '',
-				'edit_lightbox_settings'		=> ''
+				'publish_galleries'				=> 'Publish Galleries',
+				'edit_galleries'				=> 'Edit Galleries',
+				'edit_published_galleries'		=> 'Edit Published Galleries',
+				'edit_others_galleries'			=> 'Edit Others Galleries',
+				'edit_private_galleries'		=> 'Edit Private Galleries',
+				'delete_galleries'				=> 'Delete Galleries',
+				'delete_published_galleries'	=> 'Delete Published Galleries',
+				'delete_others_galleries'		=> 'Delete Others Galleries',
+				'delete_private_galleries'		=> 'Delete Private Galleries',
+				'read_private_galleries'		=> 'Read Private Galleries',
+				'manage_gallery_categories'		=> 'Manage Gallery Categories',
+				'manage_gallery_tags'			=> 'Manage Gallery Tags',
+				'edit_lightbox_settings'		=> 'Manage Settings'
 			];
 
 			// 2.3.0 update
