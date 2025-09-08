@@ -2,7 +2,7 @@
 /*
 Plugin Name: Responsive Lightbox & Gallery
 Description: Responsive Lightbox & Gallery allows users to create galleries and view larger versions of images, galleries and videos in a lightbox (overlay) effect optimized for mobile devices.
-Version: 2.5.2
+Version: 2.5.3
 Author: dFactory
 Author URI: http://www.dfactory.co/
 Plugin URI: http://www.dfactory.co/products/responsive-lightbox/
@@ -44,7 +44,7 @@ include_once( RESPONSIVE_LIGHTBOX_PATH . 'includes' . DIRECTORY_SEPARATOR . 'fun
  * Responsive Lightbox class.
  *
  * @class Responsive_Lightbox
- * @version	2.5.2
+ * @version	2.5.3
  */
 class Responsive_Lightbox {
 
@@ -270,7 +270,7 @@ class Responsive_Lightbox {
 			'origin_left'		=> true,
 			'origin_top'		=> true
 		],
-		'version' => '2.5.2',
+		'version' => '2.5.3',
 		'activation_date' => ''
 	];
 	public $options = [];

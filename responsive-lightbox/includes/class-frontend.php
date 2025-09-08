@@ -460,17 +460,34 @@ class Responsive_Lightbox_Frontend {
 	/**
 	 * Add lightbox to content links.
 	 *
-	 * @param string $link Content link
-	 * @param array $args Content arguments
+	 * @param string $link
+	 * @param array $args
+	 * 
 	 * @return string
 	 */
 	public function lightbox_content_link( $link, $args ) {
 		if ( in_array( $args['content'], $args['supports'], true ) ) {
-			// link already contains data-rel attribute?
-			if ( preg_match( '/<a.*?(?:data-rel)=(?:\'|")(.*?)(?:\'|").*?>/is', $link, $result ) === 1 )
-				$link = preg_replace( '/data-rel=(\'|")(.*?)(\'|")/s', 'data-rel="' . esc_attr( $args['selector'] ) . '-content-' . esc_attr( base64_encode( $result[1] ) ) . '"', $link );
-			else
-				$link = preg_replace( '/(<a.*?)>/s', '$1 data-rel="' . esc_attr( $args['selector'] ) . '-content-' . (int) $args['link_number'] . '">', $link );
+			libxml_use_internal_errors( true );
+
+			$dom = new DOMDocument();
+			$dom->loadHTML('<?xml encoding="utf-8" ?>' . $link, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+
+			$anchors = $dom->getElementsByTagName( 'a' );
+
+			if ( $anchors->length > 0 ) {
+				$a = $anchors->item( 0 );
+
+				if ( $a->hasAttribute( 'data-rel' ) ) {
+					$value = $a->getAttribute( 'data-rel' );
+					$a->setAttribute( 'data-rel', esc_attr( $args['selector'] ) . '-content-' . esc_attr( base64_encode( $value ) ) );
+				} else
+					$a->setAttribute( 'data-rel', esc_attr( $args['selector'] ) . '-content-' . (int) $args['link_number'] );
+
+				// remove ending </a> tag
+				$link = preg_replace( '/<\/a>$/', '', $dom->saveHTML($a));
+			}
+
+			libxml_use_internal_errors( false );
 
 			switch ( $args['script'] ) {
 				case 'nivo':

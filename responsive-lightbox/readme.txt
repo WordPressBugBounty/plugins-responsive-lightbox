@@ -3,8 +3,8 @@ Contributors: dfactory
 Donate link: http://www.dfactory.co/
 Tags: gallery, galleries, lightbox, image, images
 Requires at least: 5.0
-Tested up to: 6.8.1
-Stable tag: 2.5.2
+Tested up to: 6.8.2
+Stable tag: 2.5.3
 Requires PHP: 5.6
 License: MIT License
 License URI: http://opensource.org/licenses/MIT
@@ -139,6 +139,9 @@ Responsive Lightbox and Gallery plugin comes with many styles and effects alread
 2. screenshot-2.jpg
 
 == Changelog ==
+
+= 2.5.3 =
+* Fix: Potential XSS vulnerability related to lightbox link handling
 
 = 2.5.2 =
 * Fix: XSS vulnerability related to Swipebox lightbox
@@ -559,5 +562,5 @@ Initial release
 
 == Upgrade Notice ==
 
-= 2.5.2 =
-Fix XSS vulnerability related to Swipebox lightbox
+= 2.5.3 =
+Fix potential XSS vulnerability related to lightbox link handling
