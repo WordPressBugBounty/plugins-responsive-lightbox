@@ -41,12 +41,15 @@ class Responsive_Lightbox_Remote_Library_Wikimedia extends Responsive_Lightbox_R
 			'active'	=> false
 		];
 
-		// setting fields
+		// setting fields - Settings API format (no credentials required)
 		$this->fields = [
-			'title'		=> $this->name,
-			'section'	=> 'responsive_lightbox_remote_library_providers',
-			'type'		=> 'custom',
-			'callback'	=> [ $this, 'render_field' ]
+			'active' => [
+				'title'		=> $this->name,
+				'section'	=> 'responsive_lightbox_remote_library_providers',
+				'type'		=> 'boolean',
+				'label'		=> __( 'Enable Wikimedia support.', 'responsive-lightbox' ),
+				'parent'	=> 'wikimedia'
+			]
 		];
 
 		// response data
@@ -61,15 +64,7 @@ class Responsive_Lightbox_Remote_Library_Wikimedia extends Responsive_Lightbox_R
 		add_filter( 'rl_remote_library_query_last_page', [ $this, 'handle_last_page' ], 10, 3 );
 	}
 
-	/**
-	 * Render field.
-	 *
-	 * @return string
-	 */
-	public function render_field() {
-		return '
-		<p><label><input id="rl_wikimedia_active" type="checkbox" name="responsive_lightbox_remote_library[wikimedia][active]" value="1" ' . checked( $this->rl->options['remote_library']['wikimedia']['active'], true, false ) . ' />' . esc_html__( 'Enable Wikimedia.', 'responsive-lightbox' ) . '</label></p>';
-	}
+
 
 	/**
 	 * Validate settings.
@@ -78,11 +73,13 @@ class Responsive_Lightbox_Remote_Library_Wikimedia extends Responsive_Lightbox_R
 	 * @return array
 	 */
 	public function validate_settings( $input ) {
-		if ( ! isset( $_POST['responsive_lightbox_remote_library'] ) )
+		if ( ! isset( $input['wikimedia'] ) ) {
 			$input['wikimedia'] = $this->rl->defaults['remote_library']['wikimedia'];
-		else {
-			// active
-			$input['wikimedia']['active'] = isset( $_POST['responsive_lightbox_remote_library']['wikimedia']['active'] );
+		} else {
+			// active - already sanitized by Settings API as boolean
+			if ( ! isset( $input['wikimedia']['active'] ) ) {
+				$input['wikimedia']['active'] = false;
+			}
 		}
 
 		return $input;

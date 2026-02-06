@@ -67,14 +67,39 @@ abstract class Responsive_Lightbox_Remote_Library_API {
 		// add provider default values
 		$this->rl->defaults['remote_library'][$provider->slug] = $this->rl->providers[$provider->slug]['defaults'];
 
-		// add provider field
-		$this->rl->settings->settings['remote_library']['fields'][$provider->slug] = $this->rl->providers[$provider->slug]['fields'];
+		// register provider fields via Settings API filter
+		add_filter( 'rl_remote_library_provider_fields', [ $this, 'register_provider_fields' ] );
 
 		// validate provider settings
 		add_filter( 'rl_remote_library_settings', [ $this, 'validate_settings' ] );
 
 		// provider query
 		add_filter( 'rl_remote_library_query', [ $this, 'get_images' ], 10, 4 );
+	}
+
+	/**
+	 * Register provider fields via Settings API filter.
+	 *
+	 * @param array $fields Existing provider fields.
+	 * @return array Updated fields array.
+	 */
+	public function register_provider_fields( $fields ) {
+		if ( ! empty( $this->rl->providers[$this->slug]['fields'] ) ) {
+			$provider_fields = $this->rl->providers[$this->slug]['fields'];
+			
+			// Support both single field (legacy) and multiple fields array (new pattern)
+			// Single field has 'type' key; multiple fields array does not
+			if ( isset( $provider_fields['type'] ) ) {
+				// Legacy single field format - register as-is
+				$fields[$this->slug] = $provider_fields;
+			} else {
+				// New multi-field format - merge all fields with provider-prefixed keys
+				foreach ( $provider_fields as $field_id => $field ) {
+					$fields[$this->slug . '_' . $field_id] = $field;
+				}
+			}
+		}
+		return $fields;
 	}
 
 	/**

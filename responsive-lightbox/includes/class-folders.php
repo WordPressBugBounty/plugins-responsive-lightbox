@@ -9,6 +9,7 @@ if ( ! defined( 'ABSPATH' ) )
  * @class Responsive_Lightbox_Folders
  */
 class Responsive_Lightbox_Folders {
+	private $rl;
 
 	private $mode = '';
 	private $rl_media_tag_terms = [];
@@ -35,15 +36,19 @@ class Responsive_Lightbox_Folders {
 	/**
 	 * Class constructor.
 	 *
-	 * @param bool $read_only Whether plugin is in read only mode
+	 * @param Responsive_Lightbox|null $rl Plugin instance.
 	 * @return void
 	 */
-	public function __construct( $read_only = false ) {
-		// set instance
-		Responsive_Lightbox()->folders = $this;
+	public function __construct( $rl = null ) {
+		$this->rl = ( $rl instanceof Responsive_Lightbox ) ? $rl : Responsive_Lightbox();
 
-		// allow to load old taxonomies even in read only mode
-		add_action( 'wp_ajax_rl-folders-load-old-taxonomies', [ $this, 'load_old_taxonomies' ] );
+		// set instance
+		$this->rl->folders = $this;
+
+		// settings data filter (works regardless of UI mode)
+		add_filter( 'rl_settings_data', [ $this, 'filter_folders_settings_data' ], 20 );
+
+		$read_only = ( ! $this->rl->options['folders']['active'] || ! $this->rl->options['folders']['media_ui'] );
 
 		if ( $read_only )
 			return;
@@ -72,50 +77,236 @@ class Responsive_Lightbox_Folders {
 	}
 
 	/**
-	 * Load previously used media taxonomies via AJAX.
+	 * Get the active taxonomy based on folders_source setting.
+	 *
+	 * Returns 'rl_media_folder' when folders_source is 'rl_media_folder' or empty/invalid.
+	 * Returns media_taxonomy value when folders_source is 'custom_taxonomy'.
+	 *
+	 * @return string Active taxonomy slug
+	 */
+	public function get_active_taxonomy() {
+		$folders_source = ! empty( $this->rl->options['folders']['folders_source'] ) ? $this->rl->options['folders']['folders_source'] : 'rl_media_folder';
+		
+		if ( $folders_source === 'custom_taxonomy' ) {
+			$media_taxonomy = ! empty( $this->rl->options['folders']['media_taxonomy'] ) ? $this->rl->options['folders']['media_taxonomy'] : 'rl_media_folder';
+			return $media_taxonomy;
+		}
+		
+		return 'rl_media_folder';
+	}
+
+	/**
+	 * Initialize folders.
 	 *
 	 * @return void
 	 */
-	public function load_old_taxonomies() {
-		// no data?
-		if ( ! isset( $_POST['taxonomies'], $_POST['nonce'] ) )
-			wp_send_json_error();
+	public function init_folders() {
+		// end if in read only mode
+		if ( ! $this->rl->options['folders']['active'] )
+			return;
 
-		// invalid taxonomies format?
-		if ( ! is_array( $_POST['taxonomies'] ) )
-			wp_send_json_error();
+		// register media taxonomy
+		$this->register_media_taxonomy( 'rl_media_folder' );
 
-		// invalid nonce?
-		if ( ! ctype_alnum( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'rl-folders-ajax-taxonomies-nonce' ) )
-			wp_send_json_error();
+		// register media tags
+		if ( $this->rl->options['folders']['media_tags'] ) {
+			$show_ui = $this->rl->options['folders']['media_ui'];
+			$show_in_menu = ( $show_ui && $this->rl->options['folders']['show_in_menu'] );
 
-		// get all possible (current and previous) taxonomies
-		$fields = $this->get_taxonomies();
+			register_taxonomy(
+				'rl_media_tag',
+				'attachment',
+				[
+					'public'				=> true,
+					'hierarchical'			=> false,
+					'labels'				=> [
+						'name'				=> _x( 'Media Tags', 'taxonomy general name', 'responsive-lightbox' ),
+						'singular_name'	=> _x( 'Media Tag', 'taxonomy singular name', 'responsive-lightbox' ),
+						'search_items'	=> __( 'Search Tags', 'responsive-lightbox' ),
+						'all_items'		=> __( 'All Tags', 'responsive-lightbox' ),
+						'edit_item'		=> __( 'Edit Tag', 'responsive-lightbox' ),
+						'update_item'	=> __( 'Update Tag', 'responsive-lightbox' ),
+						'add_new_item'	=> __( 'Add New Tag', 'responsive-lightbox' ),
+						'new_item_name'	=> __( 'New Tag Name', 'responsive-lightbox' ),
+						'not_found'		=> __( 'No tags found.', 'responsive-lightbox' ),
+						'menu_name'		=> _x( 'Tags', 'taxonomy general name', 'responsive-lightbox' ),
+					],
+					'show_ui'				=> $show_ui,
+					'show_in_menu'			=> $show_in_menu,
+					'show_in_nav_menus'		=> false,
+					'show_in_quick_edit'	=> $show_ui,
+					'show_tagcloud'			=> false,
+					'show_admin_column'		=> $show_in_menu,
+					'update_count_callback'	=> '_update_generic_term_count',
+					'query_var'				=> false,
+					'rewrite'				=> false
+				]
+			);
+		}
 
-		// any results?
-		if ( ! empty( $fields ) ) {
-			// remove main taxonomy
-			if ( ( $key = array_search( 'rl_media_folder', $fields, true ) ) !== false )
-				unset( $fields[$key] );
+		$media_taxonomies = $this->get_media_taxonomy_options();
 
-			// remove media tags
-			if ( ( $key = array_search( 'rl_media_tag', $fields, true ) ) !== false )
-				unset( $fields[$key] );
+		if ( isset( $this->rl->settings->settings['folders']['fields']['media_taxonomy']['options'] ) )
+			$this->rl->settings->settings['folders']['fields']['media_taxonomy']['options'] = $media_taxonomies;
+	}
 
-			// sanitize taxonomies
-			$taxonomies = array_map( 'santize_key', $_POST['taxonomies'] );
+	/**
+	 * Filter folders settings data to inject available media taxonomies.
+	 *
+	 * @param array $data Settings data.
+	 * @return array
+	 */
+	public function filter_folders_settings_data( $data ) {
+		if ( ! $this->rl->options['folders']['active'] )
+			return $data;
 
-			foreach ( $taxonomies as $taxonomy ) {
-				// remove available taxonomy
-				if ( ( $key = array_search( $taxonomy, $fields, true ) ) !== false )
-					unset( $fields[$key] );
+		if ( ! is_array( $data ) || empty( $data['folders'] ) || ! is_array( $data['folders'] ) )
+			return $data;
+
+		$media_taxonomies = $this->get_media_taxonomy_options();
+
+		if ( isset( $data['folders']['sections']['responsive_lightbox_folders']['fields']['media_taxonomy'] ) ) {
+			$data['folders']['sections']['responsive_lightbox_folders']['fields']['media_taxonomy']['options'] = $media_taxonomies;
+			
+			// disable dropdown if no custom taxonomies were found in the DB
+			if ( empty( $media_taxonomies ) ) {
+				$data['folders']['sections']['responsive_lightbox_folders']['fields']['media_taxonomy']['disabled'] = true;
+			}
+		} elseif ( isset( $data['folders']['fields']['media_taxonomy'] ) ) {
+			$data['folders']['fields']['media_taxonomy']['options'] = $media_taxonomies;
+			
+			// disable dropdown if no custom taxonomies were found in the DB
+			if ( empty( $media_taxonomies ) ) {
+				$data['folders']['fields']['media_taxonomy']['disabled'] = true;
 			}
 		}
 
-		// send taxonomies, reindex them to avoid casting to an object in js
-		wp_send_json_success( [ 'taxonomies' => array_values( $fields ) ] );
-
+		return $data;
 	}
+
+	/**
+	 * Get available media taxonomy options.
+	 *
+	 * @return array
+	 */
+	private function get_media_taxonomy_options() {
+		// taxonomies actually used by attachments (DB-driven source of truth)
+		$db_taxonomies = $this->get_taxonomies();
+		$db_taxonomies = is_array( $db_taxonomies ) ? $db_taxonomies : [];
+
+		// exclude RLG taxonomies from the DB list
+		$db_taxonomies = array_values( array_diff( $db_taxonomies, [ 'rl_media_folder', 'rl_media_tag' ] ) );
+
+		// make DB-discovered taxonomies available even if not currently registered
+		foreach ( $db_taxonomies as $db_taxonomy ) {
+			if ( ! taxonomy_exists( $db_taxonomy ) )
+				$this->register_media_taxonomy( $db_taxonomy );
+		}
+
+		// get non-builtin hierarchical taxonomies
+		$taxonomies = get_taxonomies(
+			[
+				'object_type'	=> [ 'attachment' ],
+				'hierarchical'	=> true,
+				'_builtin'		=> false
+			],
+			'objects',
+			'and'
+		);
+
+		$media_taxonomies = [];
+
+		foreach ( $taxonomies as $taxonomy => $object ) {
+			// exclude RLG taxonomies from the taxonomies list
+			if ( in_array( $taxonomy, [ 'rl_media_folder', 'rl_media_tag', 'language' ] , true ) )
+				continue;
+				
+			$media_taxonomies[$taxonomy] = $taxonomy . ' (' . $object->labels->menu_name . ')';
+		}
+
+		// Get the currently configured media_taxonomy (not active taxonomy)
+		$tax = $this->rl->options['folders']['media_taxonomy'];
+
+		// selected hierarchical taxonomy does not exists?
+		if ( ! array_key_exists( $tax, $media_taxonomies ) ) {
+			// skip adding RLG taxonomies back
+			if ( ! in_array( $tax, [ 'rl_media_folder', 'rl_media_tag' ], true ) ) {
+				// only consider selected taxonomy if it was found in the DB
+				if ( ! in_array( $tax, $db_taxonomies, true ) ) {
+					$this->rl->options['folders']['media_taxonomy'] = $this->rl->defaults['folders']['media_taxonomy'];
+					update_option( 'responsive_lightbox_folders', $this->rl->options['folders'] );
+					return $media_taxonomies;
+				}
+
+				// check taxonomy existence
+				if ( ( $taxonomy = get_taxonomy( $tax ) ) !== false ) {
+					// update
+					$media_taxonomies[$tax] = $tax . ' (' . $taxonomy->labels->menu_name . ')';
+				// is it really old taxonomy?
+				} elseif ( in_array( $tax, $db_taxonomies, true ) ) {
+					$this->register_media_taxonomy( $tax );
+
+					$media_taxonomies[$tax] = $tax;
+				// use default taxonomy
+				} else {
+					$this->rl->options['folders']['media_taxonomy'] = $this->rl->defaults['folders']['media_taxonomy'];
+
+					update_option( 'responsive_lightbox_folders', $this->rl->options['folders'] );
+				}
+			}
+		}
+
+		return $media_taxonomies;
+	}
+
+	/**
+	 * Register media taxonomy.
+	 *
+	 * @return void
+	 */
+	public function register_media_taxonomy( $taxonomy ) {
+		$show_ui = $this->rl->options['folders']['media_ui'];
+		$active_taxonomy = $this->get_active_taxonomy();
+		
+		// Show menu only for the active taxonomy
+		$show_in_menu = ( $show_ui && $this->rl->options['folders']['show_in_menu'] && $taxonomy === $active_taxonomy );
+		
+		// Show taxonomy UI only for the active taxonomy
+		$show_tax_ui = ( $show_ui && $taxonomy === $active_taxonomy );
+
+		register_taxonomy(
+			$taxonomy,
+			'attachment',
+			[
+				'public'				=> true,
+				'hierarchical'			=> true,
+				'labels'				=> [
+					'name'				=> _x( 'Media Folders', 'taxonomy general name', 'responsive-lightbox' ),
+					'singular_name'		=> _x( 'Media Folder', 'taxonomy singular name', 'responsive-lightbox' ),
+					'search_items'		=> __( 'Search Folders', 'responsive-lightbox' ),
+					'all_items'			=> __( 'All Files', 'responsive-lightbox' ),
+					'parent_item'		=> __( 'Parent Folder', 'responsive-lightbox' ),
+					'parent_item_colon'	=> __( 'Parent Folder:', 'responsive-lightbox' ),
+					'edit_item'			=> __( 'Edit Folder', 'responsive-lightbox' ),
+					'update_item'		=> __( 'Update Folder', 'responsive-lightbox' ),
+					'add_new_item'		=> __( 'Add New Folder', 'responsive-lightbox' ),
+					'new_item_name'		=> __( 'New Folder Name', 'responsive-lightbox' ),
+					'not_found'			=> __( 'No folders found.', 'responsive-lightbox' ),
+					'menu_name'			=> _x( 'Folders', 'taxonomy general name', 'responsive-lightbox' ),
+				],
+				'show_ui'				=> $show_tax_ui,
+				'show_in_menu'			=> $show_in_menu,
+				'show_in_nav_menus'		=> false,
+				'show_in_quick_edit'	=> $show_ui,
+				'show_tagcloud'			=> false,
+				'show_admin_column'		=> $show_in_menu,
+				'update_count_callback'	=> '_update_generic_term_count',
+				'query_var'				=> false,
+				'rewrite'				=> false
+			]
+		);
+	}
+
 
 	/**
 	 * Detect library mode (list or grid).
@@ -259,8 +450,8 @@ class Responsive_Lightbox_Folders {
 	 * @return void
 	 */
 	public function post_upload_ui() {
-		// get taxonomy
-		$taxonomy = Responsive_Lightbox()->options['folders']['media_taxonomy'];
+		// get active taxonomy
+		$taxonomy = $this->get_active_taxonomy();
 
 		// get only 1 term to check if taxonomy is empty
 		$any_terms = get_terms(
@@ -310,8 +501,8 @@ class Responsive_Lightbox_Folders {
 			// cast term id
 			$term_id = (int) $_POST['rl_folders_upload_files_term_id'];
 
-			// get taxonomy
-			$taxonomy = Responsive_Lightbox()->options['folders']['media_taxonomy'];
+			// get active taxonomy
+			$taxonomy = $this->get_active_taxonomy();
 
 			// valid term?
 			if ( is_array( term_exists( $term_id, $taxonomy ) ) )
@@ -330,8 +521,8 @@ class Responsive_Lightbox_Folders {
 		global $pagenow;
 
 		if ( $pagenow === 'upload.php' ) {
-			// get taxonomy
-			$taxonomy = Responsive_Lightbox()->options['folders']['media_taxonomy'];
+			// get active taxonomy
+			$taxonomy = $this->get_active_taxonomy();
 
 			$html = wp_dropdown_categories(
 				[
@@ -368,8 +559,8 @@ class Responsive_Lightbox_Folders {
 	public function parse_query( $query ) {
 		global $pagenow;
 
-		// get taxonomy
-		$taxonomy = Responsive_Lightbox()->options['folders']['media_taxonomy'];
+		// get active taxonomy
+		$taxonomy = $this->get_active_taxonomy();
 
 		if ( $pagenow === 'upload.php' && isset( $_GET[$taxonomy] ) ) {
 			// get tax query
@@ -416,8 +607,8 @@ class Responsive_Lightbox_Folders {
 	 * @return array
 	 */
 	public function ajax_query_attachments_args( $query ) {
-		// get taxonomy
-		$taxonomy = Responsive_Lightbox()->options['folders']['media_taxonomy'];
+		// get active taxonomy
+		$taxonomy = $this->get_active_taxonomy();
 
 		if ( isset( $_POST['query'][$taxonomy] ) ) {
 			$term_id = sanitize_key( $_POST['query'][$taxonomy] );
@@ -456,12 +647,14 @@ class Responsive_Lightbox_Folders {
 	 * @return array
 	 */
 	public function attachment_fields_to_edit( $fields, $post ) {
-		if ( wp_doing_ajax() ) {
-			// get main instance
-			$rl = Responsive_Lightbox();
+		$rl = Responsive_Lightbox();
 
-			// get taxonomy option
-			$taxonomy = $rl->options['folders']['media_taxonomy'];
+		if ( ! $rl->options['folders']['active'] || ! $rl->options['folders']['media_ui'] )
+			return $fields;
+
+		if ( wp_doing_ajax() ) {
+			// get active taxonomy
+			$taxonomy = $this->get_active_taxonomy();
 
 			// get taxonomy object
 			$tax = (array) get_taxonomy( $taxonomy );
@@ -585,8 +778,8 @@ class Responsive_Lightbox_Folders {
 		// update attachment
 		wp_update_post( $post );
 
-		// get taxonomy
-		$taxonomy = Responsive_Lightbox()->options['folders']['media_taxonomy'];
+		// get active taxonomy
+		$taxonomy = $this->get_active_taxonomy();
 
 		// first if needed?
 		if ( isset( $attachment_data[$taxonomy] ) )
@@ -641,8 +834,8 @@ class Responsive_Lightbox_Folders {
 		if ( $term_id <= 0 )
 			wp_send_json_error();
 
-		// get taxonomy
-		$taxonomy = Responsive_Lightbox()->options['folders']['media_taxonomy'];
+		// get active taxonomy
+		$taxonomy = $this->get_active_taxonomy();
 
 		$remove_children = (int) $_POST['children'];
 
@@ -682,8 +875,8 @@ class Responsive_Lightbox_Folders {
 		if ( ! ctype_alnum( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'rl-folders-ajax-library-nonce' ) )
 			wp_send_json_error();
 
-		// get taxonomy
-		$taxonomy = Responsive_Lightbox()->options['folders']['media_taxonomy'];
+		// get active taxonomy
+		$taxonomy = $this->get_active_taxonomy();
 
 		// update term
 		$update = wp_update_term( (int) $_POST['term_id'], $taxonomy, [ 'parent' => (int) $_POST['parent_id'] ] );
@@ -709,8 +902,8 @@ class Responsive_Lightbox_Folders {
 		if ( ! ctype_alnum( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'rl-folders-ajax-library-nonce' ) )
 			wp_send_json_error();
 
-		// get taxonomy
-		$taxonomy = Responsive_Lightbox()->options['folders']['media_taxonomy'];
+		// get active taxonomy
+		$taxonomy = $this->get_active_taxonomy();
 
 		// prepare data
 		$original_slug = $slug = sanitize_title( $_POST['name'] );
@@ -793,8 +986,8 @@ class Responsive_Lightbox_Folders {
 		if ( $term_id <= 0 )
 			wp_send_json_error();
 
-		// get taxonomy
-		$taxonomy = Responsive_Lightbox()->options['folders']['media_taxonomy'];
+		// get active taxonomy
+		$taxonomy = $this->get_active_taxonomy();
 
 		// update term, name is sanitized inside wp_update_term with sanitize_term function
 		$update = wp_update_term( $term_id, $taxonomy, [ 'name' => $_POST['name'] ] );
@@ -855,8 +1048,8 @@ class Responsive_Lightbox_Folders {
 		$old_term_id = (int) $_POST['old_term_id'];
 		$new_term_id = (int) $_POST['new_term_id'];
 
-		// get taxonomy
-		$taxonomy = Responsive_Lightbox()->options['folders']['media_taxonomy'];
+		// get active taxonomy
+		$taxonomy = $this->get_active_taxonomy();
 
 		// moving to root folder?
 		if ( $new_term_id === 0 ) {
@@ -909,8 +1102,8 @@ class Responsive_Lightbox_Folders {
 	 * @return string
 	 */
 	public function replace_folders_href( $matches ) {
-		// get taxonomy
-		$taxonomy = Responsive_Lightbox()->options['folders']['media_taxonomy'];
+		// get active taxonomy
+		$taxonomy = $this->get_active_taxonomy();
 
 		// set 'all files' folder
 		$term_id = -1;
@@ -1015,7 +1208,7 @@ class Responsive_Lightbox_Folders {
 		wp_enqueue_style( 'responsive-lightbox-admin-select2', RESPONSIVE_LIGHTBOX_URL . '/assets/select2/select2' . ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '.min' : '' ) . '.css', [], $rl->defaults['version'] );
 
 		// filterable media folders taxonomy
-		$taxonomy = get_taxonomy( $rl->options['folders']['media_taxonomy'] );
+		$taxonomy = get_taxonomy( $this->get_active_taxonomy() );
 
 		// no taxonomy? it should be available here, updated in init_folders method
 		if ( $taxonomy === false )

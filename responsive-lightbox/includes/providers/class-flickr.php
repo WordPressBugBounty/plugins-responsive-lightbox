@@ -42,31 +42,36 @@ class Responsive_Lightbox_Remote_Library_Flickr extends Responsive_Lightbox_Remo
 			'api_key'	=> ''
 		];
 
-		// setting fields
+		// setting fields - Settings API multi-field format
 		$this->fields = [
-			'title'		=> $this->name,
-			'section'	=> 'responsive_lightbox_remote_library_providers',
-			'type'		=> 'custom',
-			'callback'	=> [ $this, 'render_field' ]
+			'active' => [
+				'title'		=> $this->name,
+				'section'	=> 'responsive_lightbox_remote_library_providers',
+				'type'		=> 'boolean',
+				'label'		=> __( 'Enable Flickr support.', 'responsive-lightbox' ),
+				'parent'	=> 'flickr'
+			],
+			'api_key' => [
+				'section'		=> 'responsive_lightbox_remote_library_providers',
+				'type'			=> 'text',
+				'class'			=> 'large-text',
+				'placeholder'	=> __( 'API key', 'responsive-lightbox' ),
+				'description'	=> sprintf( __( 'Provide your %s key.', 'responsive-lightbox' ), '<a href="https://www.flickr.com/services/apps/create/">Flickr API</a>' ),
+				'parent'		=> 'flickr',
+				'animation'		=> 'slide',
+				'logic'			=> [
+					'field'		=> 'flickr_active',
+					'operator'	=> 'is',
+					'value'		=> 'true'
+				]
+			]
 		];
 
 		// add provider
 		parent::add_provider( $this );
 	}
 
-	/**
-	 * Render field.
-	 *
-	 * @return string
-	 */
-	public function render_field() {
-		return '
-		<p><label><input id="rl_flickr_active" class="rl-media-provider-expandable" type="checkbox" name="responsive_lightbox_remote_library[flickr][active]" value="1" ' . checked( $this->rl->options['remote_library']['flickr']['active'], true, false ) . ' />' . esc_html__( 'Enable Flickr.', 'responsive-lightbox' ) . '</label></p>
-		<div class="rl-media-provider-options"' . ( $this->rl->options['remote_library']['flickr']['active'] ? '' : ' style="display: none;"' ) . '>
-			<p><input id="rl_flickr_api_key" class="large-text" placeholder="' . esc_attr__( 'API key', 'responsive-lightbox' ) . '" type="text" value="' . esc_attr( $this->rl->options['remote_library']['flickr']['api_key'] ) . '" name="responsive_lightbox_remote_library[flickr][api_key]"></p>
-			<p class="description">' . sprintf( esc_html__( 'Provide your %s key.', 'responsive-lightbox' ), '<a href="https://www.flickr.com/services/apps/create/">Flickr API</a>' ) . '</p>
-		</div>';
-	}
+
 
 	/**
 	 * Validate settings.
@@ -75,17 +80,20 @@ class Responsive_Lightbox_Remote_Library_Flickr extends Responsive_Lightbox_Remo
 	 * @return array
 	 */
 	public function validate_settings( $input ) {
-		if ( ! isset( $_POST['responsive_lightbox_remote_library'] ) )
+		if ( ! isset( $input['flickr'] ) ) {
 			$input['flickr'] = $this->rl->defaults['remote_library']['flickr'];
-		else {
-			// active
-			$input['flickr']['active'] = isset( $_POST['responsive_lightbox_remote_library']['flickr']['active'] );
+		} else {
+			// active - already sanitized by Settings API as boolean
+			if ( ! isset( $input['flickr']['active'] ) ) {
+				$input['flickr']['active'] = false;
+			}
 
-			// api key
-			if ( ! empty( $_POST['responsive_lightbox_remote_library']['flickr']['api_key'] ) && is_string( $_POST['responsive_lightbox_remote_library']['flickr']['api_key'] ) )
-				$input['flickr']['api_key'] = preg_replace( '/[^0-9a-zA-Z\-.]/', '', $_POST['responsive_lightbox_remote_library']['flickr']['api_key'] );
-			else
+			// api key - sanitize alphanumeric with hyphens and dots
+			if ( ! empty( $input['flickr']['api_key'] ) && is_string( $input['flickr']['api_key'] ) ) {
+				$input['flickr']['api_key'] = preg_replace( '/[^0-9a-zA-Z\-.]/', '', $input['flickr']['api_key'] );
+			} else {
 				$input['flickr']['api_key'] = '';
+			}
 		}
 
 		return $input;

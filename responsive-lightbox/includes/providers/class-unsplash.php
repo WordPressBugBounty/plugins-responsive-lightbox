@@ -37,31 +37,36 @@ class Responsive_Lightbox_Remote_Library_Unsplash extends Responsive_Lightbox_Re
 			'api_key'	=> ''
 		];
 
-		// setting fields
+		// setting fields - Settings API multi-field format
 		$this->fields = [
-			'title'		=> $this->name,
-			'section'	=> 'responsive_lightbox_remote_library_providers',
-			'type'		=> 'custom',
-			'callback'	=> [ $this, 'render_field' ]
+			'active' => [
+				'title'		=> $this->name,
+				'section'	=> 'responsive_lightbox_remote_library_providers',
+				'type'		=> 'boolean',
+				'label'		=> __( 'Enable Unsplash support.', 'responsive-lightbox' ),
+				'parent'	=> 'unsplash'
+			],
+			'api_key' => [
+				'section'		=> 'responsive_lightbox_remote_library_providers',
+				'type'			=> 'text',
+				'class'			=> 'large-text',
+				'placeholder'	=> __( 'Access key', 'responsive-lightbox' ),
+				'description'	=> sprintf( __( 'Provide your %s key.', 'responsive-lightbox' ), '<a href="https://unsplash.com/oauth/applications/new">Unsplash API</a>' ),
+				'parent'		=> 'unsplash',
+				'animation'		=> 'slide',
+				'logic'			=> [
+					'field'		=> 'unsplash_active',
+					'operator'	=> 'is',
+					'value'		=> 'true'
+				]
+			]
 		];
 
 		// add provider
 		parent::add_provider( $this );
 	}
 
-	/**
-	 * Render field.
-	 *
-	 * @return string
-	 */
-	public function render_field() {
-		return '
-		<p><label><input id="rl_unsplash_active" class="rl-media-provider-expandable" type="checkbox" name="responsive_lightbox_remote_library[unsplash][active]" value="1" ' . checked( $this->rl->options['remote_library']['unsplash']['active'], true, false ) . ' />' . esc_html__( 'Enable Unsplash.', 'responsive-lightbox' ) . '</label></p>
-		<div class="rl-media-provider-options"' . ( $this->rl->options['remote_library']['unsplash']['active'] ? '' : ' style="display: none;"' ) . '>
-			<p><input id="rl_unsplash_api_key" class="large-text" placeholder="' . esc_attr__( 'Access key', 'responsive-lightbox' ) . '" type="text" value="' . esc_attr( $this->rl->options['remote_library']['unsplash']['api_key'] ) . '" name="responsive_lightbox_remote_library[unsplash][api_key]"></p>
-			<p class="description">' . sprintf( esc_html__( 'Provide your %s key.', 'responsive-lightbox' ), '<a href="https://unsplash.com/oauth/applications/new">Unsplash API</a>' ) . '</p>
-		</div>';
-	}
+
 
 	/**
 	 * Validate settings.
@@ -70,17 +75,20 @@ class Responsive_Lightbox_Remote_Library_Unsplash extends Responsive_Lightbox_Re
 	 * @return array
 	 */
 	public function validate_settings( $input ) {
-		if ( ! isset( $_POST['responsive_lightbox_remote_library'] ) )
+		if ( ! isset( $input['unsplash'] ) ) {
 			$input['unsplash'] = $this->rl->defaults['remote_library']['unsplash'];
-		else {
-			// active
-			$input['unsplash']['active'] = isset( $_POST['responsive_lightbox_remote_library']['unsplash']['active'] );
+		} else {
+			// active - already sanitized by Settings API as boolean
+			if ( ! isset( $input['unsplash']['active'] ) ) {
+				$input['unsplash']['active'] = false;
+			}
 
-			// api key
-			if ( ! empty( $_POST['responsive_lightbox_remote_library']['unsplash']['api_key'] ) && is_string( $_POST['responsive_lightbox_remote_library']['unsplash']['api_key'] ) )
-				$input['unsplash']['api_key'] = preg_replace( '/[^0-9a-zA-Z\-.]/', '', $_POST['responsive_lightbox_remote_library']['unsplash']['api_key'] );
-			else
+			// api key - sanitize alphanumeric with hyphens and dots
+			if ( ! empty( $input['unsplash']['api_key'] ) && is_string( $input['unsplash']['api_key'] ) ) {
+				$input['unsplash']['api_key'] = preg_replace( '/[^0-9a-zA-Z\-.]/', '', $input['unsplash']['api_key'] );
+			} else {
 				$input['unsplash']['api_key'] = '';
+			}
 		}
 
 		return $input;

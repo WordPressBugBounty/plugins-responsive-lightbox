@@ -178,7 +178,8 @@ class Responsive_Lightbox_Remote_Library {
 			'uploadAndInsert'		=> esc_html__( 'Upload and Insert', 'responsive-lightbox' ),
 			'uploadAndSelect'		=> esc_html__( 'Upload and Select', 'responsive-lightbox' ),
 			'filterByremoteLibrary'	=> esc_html__( 'Filter by remote library', 'responsive-lightbox' ),
-			'getUploadNonce'		=> wp_create_nonce( 'rl-remote-library-upload-image' )
+			'getUploadNonce'		=> wp_create_nonce( 'rl-remote-library-upload-image' ),
+			'queryNonce'			=> wp_create_nonce( 'rl-remote-library-query' )
 		];
 
 		wp_add_inline_script( 'responsive-lightbox-remote-library-media', 'var rlRemoteLibraryMedia = ' . wp_json_encode( $script_data ) . ";\n", 'before' );
@@ -194,6 +195,15 @@ class Responsive_Lightbox_Remote_Library {
 	 */
 	public function ajax_query_media() {
 		$data = stripslashes_deep( $_POST );
+
+		// check user capabilities
+		if ( ! current_user_can( 'upload_files' ) )
+			wp_send_json_error( esc_html__( 'Insufficient permissions.', 'responsive-lightbox' ) );
+
+		// verify nonce
+		if ( ! isset( $data['nonce'] ) || ! wp_verify_nonce( $data['nonce'], 'rl-remote-library-query' ) )
+			wp_send_json_error( esc_html__( 'Invalid nonce.', 'responsive-lightbox' ) );
+
 		$results = [
 			'last'		=> false,
 			'images'	=> [],
@@ -327,97 +337,128 @@ class Responsive_Lightbox_Remote_Library {
 						$valid_host = true;
 
 					if ( $valid_host ) {
-						// get image as binary data
-						$response = wp_safe_remote_get( $image_url );
+						// get max image size (ensure at least 1MB)
+						$max_size = max( 1, absint( Responsive_Lightbox()->options['remote_library']['max_image_size'] ) ) * 1024 * 1024;
 
-						// no errors?
-						if ( ! is_wp_error( $response ) ) {
-							// get sanitized file name
-							$file_name = sanitize_file_name( pathinfo( $data['image']['name'], PATHINFO_BASENAME ) );
+						// check image size via HEAD request
+						$head_response = wp_remote_head( $image_url );
+						$skip_size_check = false;
 
-							// get file extension
-							$file_ext = pathinfo( $file_name, PATHINFO_EXTENSION );
+						if ( is_wp_error( $head_response ) ) {
+							$skip_size_check = true;
+						} else {
+							$content_length = wp_remote_retrieve_header( $head_response, 'content-length' );
 
-							// no extension?
-							if ( $file_ext === '' || ! array_key_exists( $file_ext, $image_formats ) ) {
-								$file_name .= '.jpg';
-								$file_ext = 'jpg';
+							if ( $content_length && (int) $content_length > $max_size ) {
+								$result['error'] = true;
+								$result['message'] = __( 'Image size exceeds maximum allowed size.', 'responsive-lightbox' );
 							}
+						}
 
-							// simple mime checking
-							$check = wp_check_filetype( $file_name );
+						if ( empty( $result['error'] ) ) {
+							// get image as binary data with timeout
+							$response = wp_safe_remote_get( $image_url, [ 'timeout' => 30 ] );
 
-							if ( $check['type'] === $data['image']['mime'] && $check['ext'] !== false && array_key_exists( $file_ext, $image_formats ) ) {
+							// no errors?
+							if ( ! is_wp_error( $response ) ) {
 								// get image binary data
 								$image_bits = wp_remote_retrieve_body( $response );
 
-								// upload image
-								$uploaded_image = wp_upload_bits( $file_name, null, $image_bits, current_time( 'Y/m' ) );
-
-								if ( isset( $uploaded_image['error'] ) && $uploaded_image['error'] ) {
-									$result['error'] = true;
-									$result['message'] = $uploaded_image['error'];
-								} else {
-									// get file name
-									$file_name = pathinfo( $uploaded_image['file'], PATHINFO_BASENAME );
-
-									// simulate upload
-									$_FILES['rl-remote-image'] = [
-										'error'		=> 0,
-										'name'		=> $file_name,
-										'tmp_name'	=> $uploaded_image['file'],
-										'size'		=> filesize( $uploaded_image['file'] )
-									];
-
-									// get post id
-									$post_id = isset( $data['post_id'] ) ? (int) $data['post_id'] : 0;
-
-									// more reliable mime type checking
-									$check = wp_check_filetype_and_ext( $uploaded_image['file'], $file_name );
-
-									// correct mime type and extension?
-									if ( strpos( $data['image']['mime'], 'image/' ) === 0 && $check['type'] === $data['image']['mime'] && $check['ext'] !== false && wp_get_image_mime( $uploaded_image['file'] ) === $check['type'] ) {
-										// upload image, wp handle sanitization and validation here
-										$attachment_id = media_handle_upload(
-											'rl-remote-image',
-											$post_id,
-											[
-												'post_title'	=> empty( $data['image']['title'] ) ? $file_name : $data['image']['title'],
-												'post_content'	=> empty( $data['image']['description'] ) ? '' : $data['image']['description'],
-												'post_excerpt'	=> empty( $data['image']['caption'] ) ? '' : $data['image']['caption']
-											],
-											[
-												'action'	=> 'rl_remote_library_handle_upload',
-												'test_form'	=> false
-											]
-										);
-
-										// upload success?
-										if ( ! is_wp_error( $attachment_id ) ) {
-											add_post_meta( $attachment_id, '_wp_attachment_image_alt', empty( $data['image']['alt'] ) ? '' : $data['image']['alt'] );
-
-											$result['id'] = $attachment_id;
-											$result['full'] = wp_get_attachment_image_src( $attachment_id, 'full' );
-										} else {
-											$result['error'] = true;
-											$result['message'] = $attachment_id->get_error_message();
-										}
-									// file still exists?
-									} elseif ( file_exists( $uploaded_image['file'] ) ) {
+								// check body size if HEAD was skipped or as fallback
+								$body_size = strlen( $image_bits );
+								if ( $skip_size_check || $body_size > $max_size ) {
+									if ( $body_size > $max_size ) {
 										$result['error'] = true;
-										$result['message'] = __( 'Invalid MIME type', 'responsive-lightbox' );
-
-										// delete file
-										wp_delete_file( $uploaded_image['file'] );
+										$result['message'] = __( 'Image size exceeds maximum allowed size.', 'responsive-lightbox' );
 									}
 								}
-							} else {
-								$result['error'] = true;
-								$result['message'] = __( 'Invalid image type', 'responsive-lightbox' );
+
+								if ( empty( $result['error'] ) ) {
+									// get sanitized file name
+									$file_name = sanitize_file_name( pathinfo( $data['image']['name'], PATHINFO_BASENAME ) );
+
+									// get file extension
+									$file_ext = pathinfo( $file_name, PATHINFO_EXTENSION );
+
+									// no extension?
+									if ( $file_ext === '' || ! array_key_exists( $file_ext, $image_formats ) ) {
+										$file_name .= '.jpg';
+										$file_ext = 'jpg';
+									}
+
+									// simple mime checking
+									$check = wp_check_filetype( $file_name );
+
+									if ( $check['type'] === $data['image']['mime'] && $check['ext'] !== false && array_key_exists( $file_ext, $image_formats ) ) {
+										// upload image
+										$uploaded_image = wp_upload_bits( $file_name, null, $image_bits, current_time( 'Y/m' ) );
+
+										if ( isset( $uploaded_image['error'] ) && $uploaded_image['error'] ) {
+											$result['error'] = true;
+											$result['message'] = $uploaded_image['error'];
+										} else {
+											// get file name
+											$file_name = pathinfo( $uploaded_image['file'], PATHINFO_BASENAME );
+
+											// simulate upload
+											$_FILES['rl-remote-image'] = [
+												'error'		=> 0,
+												'name'		=> $file_name,
+												'tmp_name'	=> $uploaded_image['file'],
+												'size'		=> filesize( $uploaded_image['file'] )
+											];
+
+											// get post id
+											$post_id = isset( $data['post_id'] ) ? (int) $data['post_id'] : 0;
+
+											// more reliable mime type checking
+											$check = wp_check_filetype_and_ext( $uploaded_image['file'], $file_name );
+
+											// correct mime type and extension?
+											if ( strpos( $data['image']['mime'], 'image/' ) === 0 && $check['type'] === $data['image']['mime'] && $check['ext'] !== false && wp_get_image_mime( $uploaded_image['file'] ) === $check['type'] ) {
+												// upload image, wp handle sanitization and validation here
+												$attachment_id = media_handle_upload(
+													'rl-remote-image',
+													$post_id,
+													[
+														'post_title'	=> empty( $data['image']['title'] ) ? $file_name : $data['image']['title'],
+														'post_content'	=> empty( $data['image']['description'] ) ? '' : $data['image']['description'],
+														'post_excerpt'	=> empty( $data['image']['caption'] ) ? '' : $data['image']['caption']
+													],
+													[
+														'action'	=> 'rl_remote_library_handle_upload',
+														'test_form'	=> false
+													]
+												);
+
+												// upload success?
+												if ( ! is_wp_error( $attachment_id ) ) {
+													add_post_meta( $attachment_id, '_wp_attachment_image_alt', empty( $data['image']['alt'] ) ? '' : $data['image']['alt'] );
+
+													$result['id'] = $attachment_id;
+													$result['full'] = wp_get_attachment_image_src( $attachment_id, 'full' );
+												} else {
+													$result['error'] = true;
+													$result['message'] = $attachment_id->get_error_message();
+												}
+											// file still exists?
+											} elseif ( file_exists( $uploaded_image['file'] ) ) {
+												$result['error'] = true;
+												$result['message'] = __( 'Invalid MIME type', 'responsive-lightbox' );
+
+												// delete file
+												wp_delete_file( $uploaded_image['file'] );
+											}
+										}
+									} else {
+										$result['error'] = true;
+										$result['message'] = __( 'Invalid image type', 'responsive-lightbox' );
+									}
+								} else {
+									$result['error'] = true;
+									$result['message'] = $response->get_error_message();
+								}
 							}
-						} else {
-							$result['error'] = true;
-							$result['message'] = $response->get_error_message();
 						}
 					} else {
 						$result['error'] = true;

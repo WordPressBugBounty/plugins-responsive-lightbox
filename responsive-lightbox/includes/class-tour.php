@@ -19,7 +19,6 @@ class Responsive_Lightbox_Tour {
 	 */
 	public function __construct() {
 		// actions
-		add_action( 'admin_menu', [ $this, 'admin_menu' ] );
 		add_action( 'admin_init', [ $this, 'init_tour' ] );
 		add_action( 'wp_ajax_rl-ignore-tour', [ $this, 'ignore_tour' ] );
 	}
@@ -27,24 +26,52 @@ class Responsive_Lightbox_Tour {
 	/**
 	 * Initialize tour.
 	 *
+	 * Detects rl_start_tour=1 parameter, sets tour transient, and redirects to first tour target.
+	 * After redirect, displays tour pointers on each admin page via start_tour().
+	 *
+	 * @since 2.7.0 Updated to use parameter-based trigger instead of stub tour page.
+	 *
 	 * @global string $pagenow
 	 *
 	 * @return void
 	 */
 	public function init_tour() {
-		if ( ! current_user_can( apply_filters( 'rl_lightbox_settings_capability', 'manage_options' ) ) )
+		$rl = Responsive_Lightbox();
+
+		// get master capability
+		$capability = apply_filters( 'rl_lightbox_settings_capability', $rl->options['capabilities']['active'] ? 'edit_lightbox_settings' : 'manage_options' );
+
+		// if capabilities are active, ensure admin-level users have the required capability
+		// this must happen before the capability check below (mirrors logic in class-settings.php)
+		if ( $rl->options['capabilities']['active'] ) {
+			$user = wp_get_current_user();
+
+			// grant capability to users with manage_options (admins) who don't have it yet
+			if ( is_a( $user, 'WP_User' ) && $user->has_cap( 'manage_options' ) && ! $user->has_cap( $capability ) ) {
+				$user->add_cap( $capability );
+			}
+		}
+
+		if ( ! current_user_can( $capability ) )
 			return;
 
 		global $pagenow;
 
-		if ( $pagenow === 'admin.php' && isset( $_GET['page'] ) && $_GET['page'] === 'responsive-lightbox-tour' ) {
+		$page = isset( $_GET['page'] ) ? sanitize_key( $_GET['page'] ) : '';
+		$start_tour = isset( $_GET['rl_start_tour'] ) ? sanitize_key( $_GET['rl_start_tour'] ) : '';
+		$start_nonce = isset( $_GET['rl_nonce'] ) ? sanitize_key( $_GET['rl_nonce'] ) : '';
+
+		if ( $pagenow === 'admin.php' && $page === 'responsive-lightbox-settings' && $start_tour === '1' ) {
+			if ( $start_nonce === '' || wp_verify_nonce( $start_nonce, 'rl-start-tour' ) === false )
+				return;
+
 			set_transient( 'rl_active_tour', 1, 0 );
 
-			if ( Responsive_Lightbox()->options['builder']['gallery_builder'] )
-				wp_redirect( admin_url( 'edit.php?post_type=rl_gallery' ) );
-			else
-				wp_redirect( admin_url( 'admin.php?page=responsive-lightbox-settings' ) );
+			$target = $rl->options['builder']['gallery_builder']
+				? admin_url( 'edit.php?post_type=rl_gallery' )
+				: admin_url( 'admin.php?page=responsive-lightbox-settings&tab=settings' );
 
+			wp_safe_redirect( $target );
 			exit;
 		}
 
@@ -52,20 +79,6 @@ class Responsive_Lightbox_Tour {
 			add_action( 'admin_enqueue_scripts', [ $this, 'tour_scripts_styles' ] );
 			add_action( 'admin_print_footer_scripts', [ $this, 'start_tour' ] );
 		}
-	}
-
-	/**
-	 * Add temporary admin menu.
-	 *
-	 * @global string $pagenow
-	 *
-	 * @return void
-	 */
-	public function admin_menu() {
-		global $pagenow;
-
-		if ( $pagenow === 'admin.php' && isset( $_GET['page'] ) && $_GET['page'] === 'responsive-lightbox-tour' )
-			add_submenu_page( 'responsive-lightbox-settings', '', '', apply_filters( 'rl_lightbox_settings_capability', 'manage_options' ), 'responsive-lightbox-tour', function() {} );
 	}
 
 	/**
@@ -86,6 +99,8 @@ class Responsive_Lightbox_Tour {
 	/**
 	 * Load the introduction tour.
 	 *
+	 * @since 2.7.0 Updated for Settings API migration - uses tab-based URLs instead of legacy page slugs.
+	 *
 	 * @global string $pagenow
 	 *
 	 * @return void
@@ -98,6 +113,9 @@ class Responsive_Lightbox_Tour {
 
 		// get page
 		$page = isset( $_GET['page'] ) ? sanitize_key( $_GET['page'] ) : '';
+
+		// get tab (Settings API)
+		$tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : '';
 
 		// get post type
 		$post_type = isset( $_GET['post_type'] ) ? sanitize_key( $_GET['post_type'] ) : '';
@@ -150,88 +168,101 @@ class Responsive_Lightbox_Tour {
 				}
 			}
 		// settings
-		} elseif ( $pagenow === 'admin.php' && $page ) {
+		} elseif ( $pagenow === 'admin.php' && $page === 'responsive-lightbox-settings' ) {
+			// Settings API single-page with tabs
+			// Default to 'settings' tab if none specified
+			if ( empty( $tab ) )
+				$tab = 'settings';
+
 			// general
-			if ( $page === 'responsive-lightbox-settings' ) {
+			if ( $tab === 'settings' ) {
 				$pointer = [
 					'content'	=> '<h3>' . esc_html__( 'General Settings', 'responsive-lightbox' ) . '</h3><p>' . esc_html__( "Here are the main settings for Responsive Lightbox & Gallery. They allow you to specify general rules of the plugin's operation and technical parameters of the lightbox effect and gallery. For example - you can choose your favorite lightbox effect, specify for which elements it will automatically launch and set its parameters. You can also choose the default gallery and its settings.", 'responsive-lightbox' ) . '</p>',
 					'button2'	=> __( 'Next', 'responsive-lightbox' ),
 					'id'		=> '#wpbody-content .wrap .nav-tab-active',
-					'function'	=> 'window.location="' . esc_url_raw( admin_url( 'admin.php?page=responsive-lightbox-configuration' ) ) . '";'
+					'function'	=> 'window.location="' . esc_url_raw( admin_url( 'admin.php?page=responsive-lightbox-settings&tab=configuration' ) ) . '";'
 				];
 			// lightboxes
-			} elseif ( $page === 'responsive-lightbox-configuration' ) {
+			} elseif ( $tab === 'configuration' ) {
 				$pointer = [
 					'content'	=> '<h3>' . esc_html__( 'Lightboxes Settings', 'responsive-lightbox' ) . '</h3><p>' . esc_html__( 'Each lightbox has different look, possibilities and parameters. Here is a list of available lightbox effects along with their settings. After entering the tab you can see the settings of the currently selected lightbox, but you can also modify or restore the settings of the others.', 'responsive-lightbox' ) . '</p>',
 					'button2'	=> __( 'Next', 'responsive-lightbox' ),
 					'id'		=> '#wpbody-content .wrap .nav-tab-active',
-					'function'	=> 'window.location="' . esc_url_raw( admin_url( 'admin.php?page=responsive-lightbox-gallery' ) ) . '";'
+					'function'	=> 'window.location="' . esc_url_raw( admin_url( 'admin.php?page=responsive-lightbox-settings&tab=gallery' ) ) . '";'
 				];
 			// galleries
-			} elseif ( $page === 'responsive-lightbox-gallery' ) {
+			} elseif ( $tab === 'gallery' ) {
 				$pointer = [
 					'content'	=> '<h3>' . esc_html__( 'Galleries Settings', 'responsive-lightbox' ) . '</h3><p>' . esc_html__( "This is the screen of the default gallery settings. As in the case of lightbox effects, there is a list of available galleries and their parameters. After entering the tab you can see the settings of the currently selected gallery. You can modify and adjust them to your needs or restore it's default settings.", 'responsive-lightbox' ) . '</p>',
 					'button2'	=> __( 'Next', 'responsive-lightbox' ),
 					'id'		=> '#wpbody-content .wrap .nav-tab-active',
-					'function'	=> 'window.location="' . esc_url_raw( admin_url( 'admin.php?page=responsive-lightbox-builder' ) ) . '";'
+					'function'	=> 'window.location="' . esc_url_raw( admin_url( 'admin.php?page=responsive-lightbox-settings&tab=builder' ) ) . '";'
 				];
 			// builder
-			} elseif ( $page === 'responsive-lightbox-builder' ) {
+			} elseif ( $tab === 'builder' ) {
 				$pointer = [
 					'content'	=> '<h3>' . esc_html__( 'Builder Settings', 'responsive-lightbox' ) . '</h3><p>' . esc_html__( 'You can use the galleries in many ways - insert them into posts using the Add Gallery button, insert manually using shortcodes or add to the theme using functions. But you can also display them in archives just like other post types. Use these settings to specify the functionality of the gallery builder like categories, tags, archives and permalinks.', 'responsive-lightbox' ) . '</p>',
 					'button2'	 => __( 'Next', 'responsive-lightbox' ),
 					'id'		 => '#wpbody-content .wrap .nav-tab-active',
-					'function'	 => 'window.location="' . esc_url_raw( admin_url( 'admin.php?page=responsive-lightbox-folders' ) ) . '";'
+					'function'	 => 'window.location="' . esc_url_raw( admin_url( 'admin.php?page=responsive-lightbox-settings&tab=folders' ) ) . '";'
 				];
 			// media folders
-			} elseif ( $page === 'responsive-lightbox-folders' ) {
+			} elseif ( $tab === 'folders' ) {
 				$pointer = [
 					'content'	=> '<h3>' . esc_html__( 'Folders Settings', 'responsive-lightbox' ) . '</h3><p>' . esc_html__( 'Responsive Lithbox & Gallery comes with an optional Media Folders feature that extends your WordPress Media Library with visual folders. It allows you to organize your attachments in a folder tree structure. Move, copy, rename and delete files and folders with a nice drag and drop interface.', 'responsive-lightbox' ) . '</p>',
 					'button2'	=> __( 'Next', 'responsive-lightbox' ),
 					'id'		=> '#wpbody-content .wrap .nav-tab-active',
-					'function'	=> 'window.location="' . esc_url_raw( admin_url( 'admin.php?page=responsive-lightbox-capabilities' ) ) . '";'
+					'function'	=> 'window.location="' . esc_url_raw( admin_url( 'admin.php?page=responsive-lightbox-settings&tab=capabilities' ) ) . '";'
 				];
 			// capabilities
-			} elseif ( $page === 'responsive-lightbox-capabilities' ) {
+			} elseif ( $tab === 'capabilities' ) {
 				$pointer = [
 					'content'	=> '<h3>' . esc_html__( 'Capabilities Settings', 'responsive-lightbox' ) . '</h3><p>' . esc_html__( 'Capabilities give you the ability to control what users can and cannot do within the plugin. By default only the Administrator role allows a user to perform all possible capabilities. But you can fine tune these settings to match your specific requirements.', 'responsive-lightbox' ) . '</p>',
 					'button2'	=> __( 'Next', 'responsive-lightbox' ),
 					'id'		=> '#wpbody-content .wrap .nav-tab-active',
-					'function'	=> 'window.location="' . esc_url_raw( admin_url( 'admin.php?page=responsive-lightbox-remote_library' ) ) . '";'
+					'function'	=> 'window.location="' . esc_url_raw( admin_url( 'admin.php?page=responsive-lightbox-settings&tab=remote_library' ) ) . '";'
 				];
 			// remote library
-			} elseif ( $page === 'responsive-lightbox-remote_library' ) {
-				// get tabs
-				$tabs = array_keys( $rl->settings->get_data( 'tabs' ) );
+			} elseif ( $tab === 'remote_library' ) {
+				// get tabs from Settings API
+				$settings_pages = $rl->settings_api->get_pages();
+				$tabs = isset( $settings_pages['settings']['tabs'] ) ? array_keys( $settings_pages['settings']['tabs'] ) : [];
 
 				// get current tab index
-				$tab_index = (int) array_search( 'remote_library', $tabs, true );
+				$tab_index = ! empty( $tabs ) ? (int) array_search( 'remote_library', $tabs, true ) : -1;
+
+				// determine next tab (licenses is conditional, fallback to addons)
+				$next_tab = 'addons';
+				if ( $tab_index !== -1 && isset( $tabs[$tab_index + 1] ) )
+					$next_tab = $tabs[$tab_index + 1];
 
 				$pointer = [
 					'content'	=> '<h3>' . esc_html__( 'Remote Library Settings', 'responsive-lightbox' ) . '</h3><p>' . esc_html__( 'Are you looking for free royalty free public domain and CC0-Licensed images for your website? Or you need to access your images stored in photo-sharing apps? Remote Library allows you to use images from multiple sources like Unsplash, Pixabay, Flickr or Instagram directly in your WordPress Media Manager. Now you can create galleries, browse, insert and import images as never before.', 'responsive-lightbox' ) . '</p>',
 					'button2'	=> __( 'Next', 'responsive-lightbox' ),
 					'id'		=> '#wpbody-content .wrap .nav-tab-active',
-					'function'	=> 'window.location="' . esc_url_raw( admin_url( 'admin.php?page=responsive-lightbox-' . $tabs[$tab_index + 1] ) ) . '";'
+					'function'	=> 'window.location="' . esc_url_raw( admin_url( 'admin.php?page=responsive-lightbox-settings&tab=' . $next_tab ) ) . '";'
 				];
 			// licenses
-			} elseif ( $page === 'responsive-lightbox-licenses' ) {
+			} elseif ( $tab === 'licenses' ) {
 				$pointer = [
 					'content'	=> '<h3>' . esc_html__( 'Licenses Settings', 'responsive-lightbox' ) . '</h3><p>' . esc_html__( 'This section contains a list of currently installed premium extensions. Activate your licenses to have access to automatic updates from your site. To activate the license, copy and paste the license key for the extension and save the changes. Available license keys can be found on your account on our website.', 'responsive-lightbox' ) . '</p>',
 					'button2'	=> __( 'Next', 'responsive-lightbox' ),
 					'id'		=> '#wpbody-content .wrap .nav-tab-active',
-					'function'	=> 'window.location="' . esc_url_raw( admin_url( 'admin.php?page=responsive-lightbox-addons' ) ) . '";'
+					'function'	=> 'window.location="' . esc_url_raw( admin_url( 'admin.php?page=responsive-lightbox-settings&tab=addons' ) ) . '";'
 				];
 			// addons
-			} elseif ( $page === 'responsive-lightbox-addons' ) {
+			} elseif ( $tab === 'addons' ) {
 				$pointer = [
 					'content'	=> '<h3>' . esc_html__( 'Add-ons', 'responsive-lightbox' ) . '</h3><p>' . esc_html__( 'Responsive Lightbox & Gallery is more than that. Do you need a beautiful lightbox effect, integration with social media, an attractive image gallery? Among our products you will surely find something for yourself. Boost your creativity and enhance your website with these beautiful, easy to use extensions, designed with Responsive Lightbox & Gallery integration in mind.', 'responsive-lightbox' ) . '</p>',
 					'button2'	=> '',
 					'id'		=> '#wpbody-content .wrap .nav-tab-active',
 					'function'	=> ''
 				];
-			// plugins related tabs
+			// Add-on tabs: delegate to add-ons via filter
+			// Add-ons should hook 'rl_tour_pointer' and return pointer array when $tab matches their tab key
+			// See responsive-lightbox-comments/includes/class-settings.php for implementation example
 			} else
-				$pointer = apply_filters( 'rl_tour_pointer', [], $page );
+				$pointer = apply_filters( 'rl_tour_pointer', [], $tab );
 		}
 
 		// valid pointer?
