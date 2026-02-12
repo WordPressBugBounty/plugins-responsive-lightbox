@@ -118,23 +118,6 @@ class Responsive_Lightbox_Settings_API {
 						! empty( $data['icon'] ) ? $data['icon'] : '',
 						! empty( $data['position'] ) ? $data['position'] : null
 					);
-
-					// Phase 8: Register visible submenus for each tab (compatibility shim)
-					if ( ! empty( $data['tabs'] ) ) {
-						foreach ( $data['tabs'] as $tab_key => $tab_data ) {
-							add_submenu_page(
-								$data['menu_slug'],
-								$tab_data['label'],
-								$tab_data['label'],
-								$data['capability'],
-								$data['menu_slug'] . '&tab=' . $tab_key,
-								[ $this, 'options_page' ]
-							);
-						}
-
-						// Remove first duplicate submenu entry
-						remove_submenu_page( $data['menu_slug'], $data['menu_slug'] );
-					}
 				}
 
 				// add page type
@@ -966,10 +949,12 @@ class Responsive_Lightbox_Settings_API {
 
 		switch ( $args['type'] ) {
 			case 'boolean':
+				$checked_value = ( $args['value'] === true || $args['value'] === 1 || $args['value'] === '1' || $args['value'] === 'true' );
+
 				if ( empty( $args['disabled'] ) )
 					$html .= '<input type="hidden" name="' . esc_attr( $args['name'] ) . '" value="false" />';
 
-				$html .= '<label><input id="' . esc_attr( $args['html_id'] ) . '" type="checkbox" role="switch" name="' . esc_attr( $args['name'] ) . '" value="true" ' . checked( (bool) $args['value'], true, false ) . ' ' . disabled( empty( $args['disabled'] ), false, false ) . ' />' . wp_kses_post( $args['label'] ) . '</label>';
+				$html .= '<label><input id="' . esc_attr( $args['html_id'] ) . '" type="checkbox" role="switch" name="' . esc_attr( $args['name'] ) . '" value="true" ' . checked( $checked_value, true, false ) . ' ' . disabled( empty( $args['disabled'] ), false, false ) . ' />' . wp_kses_post( $args['label'] ) . '</label>';
 				break;
 
 			case 'button':

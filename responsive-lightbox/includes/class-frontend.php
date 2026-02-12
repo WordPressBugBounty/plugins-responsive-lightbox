@@ -647,7 +647,7 @@ class Responsive_Lightbox_Frontend {
 
 		return [
 			'size' => [
-				'title'			=> __( 'Size', 'responsive-lightbox' ),
+				'title'			=> __( 'Image Size', 'responsive-lightbox' ),
 				'type'			=> 'select',
 				'description'	=> __( 'Specify the image size to use for the thumbnail display.', 'responsive-lightbox' ),
 				'default'		=> 'medium',
@@ -665,7 +665,7 @@ class Responsive_Lightbox_Frontend {
 				]
 			],
 			'orderby' => [
-				'title'			=> __( 'Orderby', 'responsive-lightbox' ),
+				'title'			=> __( 'Order By', 'responsive-lightbox' ),
 				'type'			=> 'select',
 				'description'	=> __( 'Specify how to sort the display thumbnails.', 'responsive-lightbox' ),
 				'default'		=> 'menu_order',
@@ -814,8 +814,8 @@ class Responsive_Lightbox_Frontend {
 			$ids = [];
 
 			if ( ! empty( $shortcode_atts['include'] ) ) {
-				// filter attachment IDs
-				$include = array_unique( array_filter( array_map( 'intval', explode( ',', $shortcode_atts['include'] ) ) ) );
+				// Normalize input from shortcode strings and widget/programmatic array payloads.
+				$include = wp_parse_id_list( $shortcode_atts['include'] );
 
 				// any attachments?
 				if ( ! empty( $include ) ) {
@@ -832,9 +832,9 @@ class Responsive_Lightbox_Frontend {
 						]
 					);
 				}
-			} elseif ( ! empty( $exclude ) ) {
-				// filter attachment IDs
-				$exclude = array_unique( array_filter( array_map( 'intval', explode( ',', $shortcode_atts['exclude'] ) ) ) );
+			} elseif ( ! empty( $shortcode_atts['exclude'] ) ) {
+				// Normalize input from shortcode strings and widget/programmatic array payloads.
+				$exclude = wp_parse_id_list( $shortcode_atts['exclude'] );
 
 				// any attachments?
 				if ( ! empty( $exclude ) ) {

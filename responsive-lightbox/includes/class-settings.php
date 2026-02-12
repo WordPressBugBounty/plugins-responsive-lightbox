@@ -78,7 +78,7 @@ class Responsive_Lightbox_Settings {
 		// actions
 		add_action( 'after_setup_theme', [ $this, 'load_defaults' ] );
 		add_action( 'admin_init', [ $this, 'init_builder' ] );
-		add_action( 'admin_menu', [ $this, 'admin_menu_options' ] );
+		add_action( 'admin_menu', [ $this, 'admin_menu_options' ], 12 );
 		add_action( 'rl_settings_sidebar', [ $this, 'settings_sidebar' ], 10, 5 );
 		add_filter( 'parent_file', [ $this, 'highlight_parent_menu' ] );
 		add_filter( 'submenu_file', [ $this, 'highlight_submenu' ], 10, 2 );
@@ -215,6 +215,7 @@ class Responsive_Lightbox_Settings {
 		return [];
 	}
 
+
 	/**
 	 * Get script option from scripts array.
 	 * 
@@ -279,6 +280,19 @@ class Responsive_Lightbox_Settings {
 	 * @return bool True if tab exists, false otherwise
 	 */
 	public function has_setting_tab( $tab ) {
+		if ( $tab === '' )
+			return false;
+
+		static $resolving = false;
+		if ( $resolving )
+			return isset( $this->settings[ $tab ] );
+
+		$resolving = true;
+		$settings_data = apply_filters( 'rl_settings_data', [] );
+		$resolving = false;
+		if ( isset( $settings_data[ $tab ] ) )
+			return true;
+
 		return isset( $this->settings[ $tab ] );
 	}
 
@@ -292,23 +306,46 @@ class Responsive_Lightbox_Settings {
 	 * @return string|null Settings key or null if not found
 	 */
 	public function get_settings_key_by_option( $option_name ) {
-		foreach ( $this->settings as $id => $setting ) {
-			if ( isset( $setting['option_name'] ) && $setting['option_name'] === $option_name ) {
-				return $id;
+		if ( $option_name === '' )
+			return '';
+
+		static $resolving = false;
+		if ( $resolving ) {
+			foreach ( $this->settings as $id => $setting ) {
+				if ( isset( $setting['option_group'] ) && $setting['option_group'] === $option_name )
+					return $id;
+
+				if ( isset( $setting['option_name'] ) && $setting['option_name'] === $option_name )
+					return $id;
 			}
+
+			return '';
 		}
 
-		// fallback: resolve from Settings API data
+		// resolve from Settings API data first
+		$resolving = true;
 		$settings_data = apply_filters( 'rl_settings_data', [] );
+		$resolving = false;
 		if ( is_array( $settings_data ) ) {
 			foreach ( $settings_data as $id => $setting ) {
-				if ( isset( $setting['option_name'] ) && $setting['option_name'] === $option_name ) {
+				if ( isset( $setting['option_group'] ) && $setting['option_group'] === $option_name )
 					return $id;
-				}
+
+				if ( isset( $setting['option_name'] ) && $setting['option_name'] === $option_name )
+					return $id;
 			}
 		}
 
-		return null;
+		// fallback: legacy settings array
+		foreach ( $this->settings as $id => $setting ) {
+			if ( isset( $setting['option_group'] ) && $setting['option_group'] === $option_name )
+				return $id;
+
+			if ( isset( $setting['option_name'] ) && $setting['option_name'] === $option_name )
+				return $id;
+		}
+
+		return '';
 	}
 
 	/**
@@ -321,11 +358,24 @@ class Responsive_Lightbox_Settings {
 	 * @return array|null Full setting definition or null if not found
 	 */
 	public function get_setting_definition( $tab ) {
+		if ( $tab === '' )
+			return null;
+
+		static $resolving = false;
+		if ( $resolving )
+			return isset( $this->settings[ $tab ] ) ? $this->settings[ $tab ] : null;
+
+		$resolving = true;
+		$settings_data = apply_filters( 'rl_settings_data', [] );
+		$resolving = false;
+		if ( isset( $settings_data[ $tab ] ) )
+			return $settings_data[ $tab ];
+
 		// Note: Accesses legacy structure directly; needed for metadata like option_name/option_group
 		// that isn't part of the fields array
-		if ( isset( $this->settings[ $tab ] ) ) {
+		if ( isset( $this->settings[ $tab ] ) )
 			return $this->settings[ $tab ];
-		}
+
 		return null;
 	}
 
@@ -388,8 +438,41 @@ class Responsive_Lightbox_Settings {
 			}
 		}
 
-		// Settings API handles menu registration via prepare_pages()
-		// Filter 'rl_use_settings_api_menus' retained for backward compatibility but always true
+		// Register submenu entries for each settings tab so WP admin left menu
+		// behaves like native menus with visible child items on hover.
+		$api_pages = $rl->settings_api->get_pages();
+		$tabs = isset( $api_pages['settings']['tabs'] ) && is_array( $api_pages['settings']['tabs'] ) ? $api_pages['settings']['tabs'] : [];
+
+		if ( empty( $tabs ) )
+			return;
+
+		$parent_slug = 'responsive-lightbox-settings';
+		$submenu_root_tab = '';
+
+		foreach ( $tabs as $tab_key => $tab_data ) {
+			if ( ! empty( $tab_data['disabled'] ) )
+				continue;
+
+			$submenu_root_tab = $tab_key;
+			break;
+		}
+
+		foreach ( $tabs as $tab_key => $tab_data ) {
+			if ( ! empty( $tab_data['disabled'] ) )
+				continue;
+
+			$menu_title = ! empty( $tab_data['label'] ) ? $tab_data['label'] : ucfirst( str_replace( '_', ' ', $tab_key ) );
+			$menu_slug = ( $tab_key === $submenu_root_tab ) ? $parent_slug : $parent_slug . '&tab=' . $tab_key;
+
+			add_submenu_page(
+				$parent_slug,
+				__( 'Lightbox', 'responsive-lightbox' ),
+				$menu_title,
+				$capability,
+				$menu_slug,
+				[ $rl->settings_api, 'options_page' ]
+			);
+		}
 	}
 
 	/**
@@ -410,7 +493,7 @@ class Responsive_Lightbox_Settings {
 	}
 
 	/**
-	 * Highlight submenu for tabbed settings.
+	 * Highlight submenu based on active settings tab.
 	 *
 	 * @param string $submenu_file Submenu file.
 	 * @param string $parent_file Parent file.
@@ -423,25 +506,42 @@ class Responsive_Lightbox_Settings {
 		$page_raw = isset( $_GET['page'] ) ? wp_unslash( $_GET['page'] ) : '';
 		$page_parts = $page_raw !== '' ? explode( '&', $page_raw, 2 ) : [ '' ];
 		$page = $page_parts[0] !== '' ? sanitize_key( $page_parts[0] ) : '';
-		$page_args = [];
-
-		if ( ! empty( $page_parts[1] ) )
-			parse_str( $page_parts[1], $page_args );
 
 		if ( $page !== 'responsive-lightbox-settings' )
 			return $submenu_file;
 
-		$tab_key = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : ( isset( $page_args['tab'] ) ? sanitize_key( $page_args['tab'] ) : 'settings' );
+		$rl = Responsive_Lightbox();
+		$api_pages = $rl->settings_api->get_pages();
+		$tabs = isset( $api_pages['settings']['tabs'] ) && is_array( $api_pages['settings']['tabs'] ) ? $api_pages['settings']['tabs'] : [];
 
-		$target = 'responsive-lightbox-settings&tab=' . $tab_key;
-		$menu = isset( $GLOBALS['submenu']['responsive-lightbox-settings'] ) ? $GLOBALS['submenu']['responsive-lightbox-settings'] : [];
+		if ( empty( $tabs ) )
+			return 'responsive-lightbox-settings';
 
-		foreach ( $menu as $item ) {
-			if ( isset( $item[2] ) && $item[2] === $target )
-				return $target;
+		$submenu_root_tab = '';
+		foreach ( $tabs as $tab_key => $tab_data ) {
+			if ( ! empty( $tab_data['disabled'] ) )
+				continue;
+
+			$submenu_root_tab = $tab_key;
+			break;
 		}
 
-		return $submenu_file;
+		if ( $submenu_root_tab === '' )
+			return 'responsive-lightbox-settings';
+
+		$page_args = [];
+		if ( ! empty( $page_parts[1] ) )
+			parse_str( $page_parts[1], $page_args );
+
+		$tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : ( isset( $page_args['tab'] ) ? sanitize_key( $page_args['tab'] ) : $submenu_root_tab );
+
+		if ( ! isset( $tabs[$tab] ) || ! empty( $tabs[$tab]['disabled'] ) )
+			$tab = $submenu_root_tab;
+
+		if ( $tab === $submenu_root_tab )
+			return 'responsive-lightbox-settings';
+
+		return 'responsive-lightbox-settings&tab=' . $tab;
 	}
 
 	/**

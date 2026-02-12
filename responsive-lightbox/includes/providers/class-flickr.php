@@ -83,8 +83,8 @@ class Responsive_Lightbox_Remote_Library_Flickr extends Responsive_Lightbox_Remo
 		if ( ! isset( $input['flickr'] ) ) {
 			$input['flickr'] = $this->rl->defaults['remote_library']['flickr'];
 		} else {
-			// active - already sanitized by Settings API as boolean
-			if ( ! isset( $input['flickr']['active'] ) ) {
+			// Support both legacy key (active) and Settings API key (flickr_active)
+			if ( ! isset( $input['flickr']['active'] ) && ! isset( $input['flickr']['flickr_active'] ) ) {
 				$input['flickr']['active'] = false;
 			}
 

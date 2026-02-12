@@ -38,7 +38,7 @@ class Responsive_Lightbox_Remote_Library_Wikimedia extends Responsive_Lightbox_R
 
 		// default values
 		$this->defaults = [
-			'active'	=> false
+			'active'	=> true
 		];
 
 		// setting fields - Settings API format (no credentials required)
@@ -76,8 +76,8 @@ class Responsive_Lightbox_Remote_Library_Wikimedia extends Responsive_Lightbox_R
 		if ( ! isset( $input['wikimedia'] ) ) {
 			$input['wikimedia'] = $this->rl->defaults['remote_library']['wikimedia'];
 		} else {
-			// active - already sanitized by Settings API as boolean
-			if ( ! isset( $input['wikimedia']['active'] ) ) {
+			// Support both legacy key (active) and Settings API key (wikimedia_active)
+			if ( ! isset( $input['wikimedia']['active'] ) && ! isset( $input['wikimedia']['wikimedia_active'] ) ) {
 				$input['wikimedia']['active'] = false;
 			}
 		}

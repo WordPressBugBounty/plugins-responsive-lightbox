@@ -32,6 +32,7 @@ class Responsive_Lightbox_Folders {
 			'selected'	=> true
 		]
 	];
+	private $cached_taxonomies = null;
 
 	/**
 	 * Class constructor.
@@ -1353,12 +1354,7 @@ class Responsive_Lightbox_Folders {
 				if ( $term_id > 0 )
 					$html = preg_replace_callback( '/class="cat-item cat-item-(\d+)(?:[a-z\s0-9-]+)?"/', [ $this, 'open_folders' ], $html );
 
-				// check whether counters are valid
-				if ( ! ( empty( $this->term_counters['keys'] ) || empty( $this->term_counters['values'] ) || count( $this->term_counters['keys'] ) !== count( $this->term_counters['values'] ) ) ) {
-//@TODO counters are supposed to be used in JS but not implemented yet
-					// update folder counters
-					$counters = array_combine( $this->term_counters['keys'], $this->term_counters['values'] );
-				}
+				// counters are calculated elsewhere; UI does not currently consume them
 			}
 
 			// root folder query
@@ -1522,7 +1518,10 @@ class Responsive_Lightbox_Folders {
 	 *
 	 * @return array
 	 */
-	public function get_taxonomies() {
+	public function get_taxonomies( $force_refresh = false ) {
+		if ( ! $force_refresh && is_array( $this->cached_taxonomies ) )
+			return $this->cached_taxonomies;
+
 		global $wpdb;
 
 		// query
@@ -1541,6 +1540,8 @@ class Responsive_Lightbox_Folders {
 				unset( $fields[$key] );
 		}
 
-		return $fields;
+		$this->cached_taxonomies = is_array( $fields ) ? array_values( $fields ) : [];
+
+		return $this->cached_taxonomies;
 	}
 }

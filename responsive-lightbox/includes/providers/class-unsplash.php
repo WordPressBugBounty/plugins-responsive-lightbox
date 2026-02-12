@@ -78,8 +78,8 @@ class Responsive_Lightbox_Remote_Library_Unsplash extends Responsive_Lightbox_Re
 		if ( ! isset( $input['unsplash'] ) ) {
 			$input['unsplash'] = $this->rl->defaults['remote_library']['unsplash'];
 		} else {
-			// active - already sanitized by Settings API as boolean
-			if ( ! isset( $input['unsplash']['active'] ) ) {
+			// Support both legacy key (active) and Settings API key (unsplash_active)
+			if ( ! isset( $input['unsplash']['active'] ) && ! isset( $input['unsplash']['unsplash_active'] ) ) {
 				$input['unsplash']['active'] = false;
 			}
 

@@ -55,6 +55,18 @@ class Responsive_Lightbox_Remote_Library {
 		// get active providers
 		$providers = $this->get_active_providers();
 
+		// normalize provider value
+		if ( is_array( $args['media_provider'] ) ) {
+			$args['media_provider'] = reset( $args['media_provider'] );
+		}
+		$args['media_provider'] = sanitize_key( (string) $args['media_provider'] );
+		if ( $args['media_provider'] === '' ) {
+			$args['media_provider'] = 'all';
+		}
+		if ( $args['media_provider'] !== 'all' && ! in_array( $args['media_provider'], $providers, true ) ) {
+			$args['media_provider'] = 'all';
+		}
+
 		$html = '';
 
 		// any providers?
@@ -127,7 +139,7 @@ class Responsive_Lightbox_Remote_Library {
 		$active_providers = [];
 
 		foreach ( $providers as $provider => $data ) {
-			if ( Responsive_Lightbox()->options['remote_library'][$provider]['active'] )
+			if ( $this->is_provider_enabled( $provider ) )
 				$active_providers[] = $provider;
 		}
 
@@ -141,10 +153,98 @@ class Responsive_Lightbox_Remote_Library {
 	 * @return bool
 	 */
 	public function is_active_provider( $provider ) {
-		$providers = $this->get_providers();
-		$rl = Responsive_Lightbox();
+		$is_active = $this->is_provider_enabled( $provider );
 
-		return (bool) apply_filters( 'rl_is_active_provider', array_key_exists( $provider, $rl->options['remote_library'] ) && $rl->options['remote_library'][$provider]['active'], $provider );
+		return (bool) apply_filters( 'rl_is_active_provider', $is_active, $provider );
+	}
+
+	/**
+	 * Check whether a provider is enabled in settings.
+	 *
+	 * Supports both legacy key: [provider][active]
+	 * and migrated key pattern: [provider][provider_active].
+	 *
+	 * @param string $provider Provider slug.
+	 * @return bool
+	 */
+	private function is_provider_enabled( $provider ) {
+		$rl = Responsive_Lightbox();
+		$remote_settings = isset( $rl->options['remote_library'] ) && is_array( $rl->options['remote_library'] )
+			? $rl->options['remote_library']
+			: [];
+		$alt_key = $provider . '_active';
+
+		if ( array_key_exists( $provider, $remote_settings ) ) {
+			$provider_settings = $remote_settings[$provider];
+
+			// Migrated key ({provider}_active) takes priority over legacy key (active)
+			// to prevent false negatives when both exist with conflicting values.
+			if ( is_array( $provider_settings ) ) {
+				if ( isset( $provider_settings[$alt_key] ) ) {
+					return $this->normalize_bool_value( $provider_settings[$alt_key] );
+				}
+
+				if ( isset( $provider_settings['active'] ) ) {
+					return $this->normalize_bool_value( $provider_settings['active'] );
+				}
+			} else {
+				// Fallback for scalar provider values.
+				return $this->normalize_bool_value( $provider_settings );
+			}
+		}
+
+		// Fallback shape: remote_library[provider_active]
+		if ( isset( $remote_settings[$alt_key] ) ) {
+			return $this->normalize_bool_value( $remote_settings[$alt_key] );
+		}
+
+		// Fallback to plugin defaults when option payload does not carry provider keys.
+		if ( isset( $rl->defaults['remote_library'][$provider] ) && is_array( $rl->defaults['remote_library'][$provider] ) ) {
+			$default_provider = $rl->defaults['remote_library'][$provider];
+			if ( isset( $default_provider['active'] ) ) {
+				return $this->normalize_bool_value( $default_provider['active'] );
+			}
+			if ( isset( $default_provider[$alt_key] ) ) {
+				return $this->normalize_bool_value( $default_provider[$alt_key] );
+			}
+		}
+
+		// Fallback to provider registration defaults.
+		if ( isset( $rl->providers[$provider]['defaults'] ) && is_array( $rl->providers[$provider]['defaults'] ) ) {
+			$provider_defaults = $rl->providers[$provider]['defaults'];
+			if ( isset( $provider_defaults['active'] ) ) {
+				return $this->normalize_bool_value( $provider_defaults['active'] );
+			}
+			if ( isset( $provider_defaults[$alt_key] ) ) {
+				return $this->normalize_bool_value( $provider_defaults[$alt_key] );
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Normalize mixed bool-like values from options.
+	 *
+	 * @param mixed $value Value to normalize.
+	 * @return bool
+	 */
+	private function normalize_bool_value( $value ) {
+		if ( is_bool( $value ) ) {
+			return $value;
+		}
+
+		if ( is_string( $value ) ) {
+			$value = strtolower( trim( $value ) );
+			if ( $value === '' || $value === 'false' || $value === '0' ) {
+				return false;
+			}
+			if ( $value === 'true' || $value === '1' ) {
+				return true;
+			}
+		}
+
+		return ! empty( $value );
 	}
 
 	/**

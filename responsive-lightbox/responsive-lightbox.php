@@ -2,7 +2,7 @@
 /*
 Plugin Name: Responsive Lightbox & Gallery
 Description: Responsive Lightbox & Gallery allows users to create galleries and view larger versions of images, galleries and videos in a lightbox (overlay) effect optimized for mobile devices.
-Version: 2.7.0
+Version: 2.7.1
 Author: dFactory
 Author URI: http://www.dfactory.co/
 Plugin URI: http://www.dfactory.co/products/responsive-lightbox/
@@ -45,7 +45,7 @@ include_once( RESPONSIVE_LIGHTBOX_PATH . 'includes' . DIRECTORY_SEPARATOR . 'fun
  * Responsive Lightbox class.
  *
  * @class Responsive_Lightbox
- * @version	2.7.0
+ * @version	2.7.1
  */
 class Responsive_Lightbox {
 
@@ -255,7 +255,7 @@ class Responsive_Lightbox {
 			'columns_sm'		=> 2,
 			'columns_xs'		=> 1,
 			'gutter'			=> 2,
-			'force_height'		=> false,
+			'force_height'		=> true,
 			'row_height'		=> 150
 		],
 		'basicslider_gallery' => [
@@ -284,7 +284,7 @@ class Responsive_Lightbox {
 			'origin_left'		=> true,
 			'origin_top'		=> true
 		],
-		'version' => '2.7.0',
+		'version' => '2.7.1',
 		'activation_date' => ''
 	];
 	public $options = [];
@@ -319,6 +319,7 @@ class Responsive_Lightbox {
 	public $remote_library;
 	public $settings;
 	public $settings_api;
+	public $gallery_api;
 
 	/**
 	 * Class constructor.
@@ -1604,12 +1605,13 @@ class Responsive_Lightbox {
 			}
 		' );
 
-		// get tab keys from Settings API
-		$api_pages = $this->settings_api->get_pages();
-		$tab_keys = isset( $api_pages['settings'], $api_pages['settings']['tabs'] ) ? array_keys( $api_pages['settings']['tabs'] ) : [ 'settings' ];
+		$page_raw = isset( $_GET['page'] ) ? wp_unslash( $_GET['page'] ) : '';
+		$page_parts = $page_raw !== '' ? explode( '&', $page_raw, 2 ) : [ '' ];
+		$page_slug = $page_parts[0] !== '' ? sanitize_key( $page_parts[0] ) : '';
 
 		// settings pages?
-		if ( preg_match( '/^(toplevel|lightbox)_page_responsive-lightbox-(' . implode( '|', $tab_keys ) . ')$/', $page ) === 1 ) {
+		if ( $page_slug === 'responsive-lightbox-settings' ) {
+			wp_enqueue_script( 'responsive-lightbox-admin-theme', RESPONSIVE_LIGHTBOX_URL . '/js/admin-theme.js', [], $this->defaults['version'] );
 			wp_enqueue_script( 'responsive-lightbox-admin-settings', RESPONSIVE_LIGHTBOX_URL . '/js/admin-settings.js', [ 'jquery' ], $this->defaults['version'] );
 
 			// prepare script data
@@ -1624,12 +1626,13 @@ class Responsive_Lightbox {
 
 			wp_enqueue_style( 'responsive-lightbox-admin', RESPONSIVE_LIGHTBOX_URL . '/css/admin.css', [], $this->defaults['version'] );
 			wp_enqueue_style( 'responsive-lightbox-admin-settings', RESPONSIVE_LIGHTBOX_URL . '/css/admin-settings.css', [ 'responsive-lightbox-admin' ], $this->defaults['version'] );
-		// galleries?
-		} elseif ( in_array( $page, [ 'post.php', 'post-new.php' ], true ) && get_post_type() === 'rl_gallery' || ( $page === 'edit.php' && $typenow === 'rl_gallery' ) ) {
+		// gallery editor screens
+		} elseif ( in_array( $page, [ 'post.php', 'post-new.php' ], true ) && get_post_type() === 'rl_gallery' ) {
 			wp_enqueue_media();
 
 			wp_enqueue_script( 'responsive-lightbox-admin-select2', RESPONSIVE_LIGHTBOX_URL . '/assets/select2/select2.full' . ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '.min' : '' ) . '.js', [ 'jquery' ], '4.1.0' );
-			wp_enqueue_script( 'responsive-lightbox-admin-galleries', RESPONSIVE_LIGHTBOX_URL . '/js/admin-galleries.js', [ 'jquery', 'underscore', 'wp-color-picker', 'jquery-ui-sortable' ], $this->defaults['version'] );
+			wp_enqueue_script( 'responsive-lightbox-admin-theme', RESPONSIVE_LIGHTBOX_URL . '/js/admin-theme.js', [], $this->defaults['version'] );
+			wp_enqueue_script( 'responsive-lightbox-admin-galleries', RESPONSIVE_LIGHTBOX_URL . '/js/admin-galleries.js', [ 'jquery', 'underscore', 'jquery-ui-sortable' ], $this->defaults['version'] );
 
 			// get fields
 			$fields = $this->galleries->get_data( 'fields' );
@@ -1662,10 +1665,24 @@ class Responsive_Lightbox {
 
 			wp_add_inline_script( 'responsive-lightbox-admin-galleries', 'var rlArgsGalleries = ' . wp_json_encode( $script_data ) . ";\n", 'before' );
 
-			wp_enqueue_style( 'wp-color-picker' );
 			wp_enqueue_style( 'responsive-lightbox-admin', RESPONSIVE_LIGHTBOX_URL . '/css/admin.css', [], $this->defaults['version'] );
 			wp_enqueue_style( 'responsive-lightbox-admin-select2', RESPONSIVE_LIGHTBOX_URL . '/assets/select2/select2' . ( ! ( defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ) ? '.min' : '' ) . '.css', [], '4.1.0' );
 			wp_enqueue_style( 'responsive-lightbox-admin-galleries', RESPONSIVE_LIGHTBOX_URL . '/css/admin-galleries.css', [], $this->defaults['version'] );
+		// gallery list screen
+		} elseif ( $page === 'edit.php' && $typenow === 'rl_gallery' ) {
+			wp_enqueue_style( 'responsive-lightbox-admin', RESPONSIVE_LIGHTBOX_URL . '/css/admin.css', [], $this->defaults['version'] );
+
+			// Keep thumbnail column layout without loading full gallery editor styles on list table screens.
+			wp_register_style( 'responsive-lightbox-admin-galleries-list', false );
+			wp_enqueue_style( 'responsive-lightbox-admin-galleries-list' );
+			wp_add_inline_style(
+				'responsive-lightbox-admin-galleries-list',
+				'.wp-list-table .column-image { width: 80px; }' .
+				'.wp-list-table .column-image .media-icon { position: relative; overflow: hidden; text-align: center; height: 62px; }' .
+				'.wp-list-table .column-image img { position: absolute; left: 50%; top: 50%; height: 100%; width: auto; transform: translate(-50%, -50%); }' .
+				'.wp-list-table .column-image img.format-portrait { width: 100%; height: auto; }' .
+				'.wp-list-table .column-image span { display: block; }'
+			);
 		// plugins?
 		} elseif ( $page === 'plugins.php' ) {
 			add_thickbox();

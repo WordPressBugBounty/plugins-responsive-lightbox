@@ -166,7 +166,7 @@ class Responsive_Lightbox_Settings_Pages {
 			'menu_title'	=> __( 'Lightbox', 'responsive-lightbox' ),
 			'capability'	=> $capability,
 			'icon'		=> 'dashicons-format-image',
-			'position'	=> 57,
+			'position'	=> 57.1,
 			'tabs'		=> $tabs
 		];
 

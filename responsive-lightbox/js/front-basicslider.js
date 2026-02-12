@@ -1,1 +1,1 @@
-var e;(e=jQuery)(document).on("doResponsiveLightbox",()=>{e(".rl-basicslider-gallery").each((l,o)=>{const n=e(o),r=window["rlArgsBasicSliderGallery"+(n.data("gallery_no")+1)];if(void 0!==r&&!1!==typeof r){const e=n[0].parentElement;new Splide(e,r).mount()}})});
+var e;(e=jQuery)(document).on("doResponsiveLightbox",()=>{e(".rl-basicslider-gallery").each((l,n)=>{const o=e(n),r=window["rlArgsBasicSliderGallery"+(o.data("gallery_no")+1)];if(void 0!==r&&!1!==r){const e=o[0].parentElement;new Splide(e,r).mount()}})});
