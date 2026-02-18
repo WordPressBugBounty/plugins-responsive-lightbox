@@ -4,7 +4,7 @@ Donate link: http://www.dfactory.co/
 Tags: gallery, galleries, lightbox, image, images
 Requires at least: 6.0
 Tested up to: 6.9.1
-Stable tag: 2.7.1
+Stable tag: 2.7.2
 Requires PHP: 7.0
 License: MIT License
 License URI: http://opensource.org/licenses/MIT
@@ -139,6 +139,12 @@ Responsive Lightbox and Gallery plugin comes with many styles and effects alread
 2. screenshot-2.jpg
 
 == Changelog ==
+
+= 2.7.2 =
+* New: Media Folders sticky sidebar with collapsible panel, drag-to-resize, and persistent collapse state
+* New: Persist folders tree open/close state and selected folder across page reloads
+* Fix: Preserve GLightbox caption links on mobile devices
+* Fix: Sync media grid folder counters and upload folder target after attachment changes
 
 = 2.7.1 =
 * New: Gallery UI revamp with improved editor reliability
@@ -602,5 +608,5 @@ Initial release
 
 == Upgrade Notice ==
 
-= 2.7.1 =
-Gallery UI revamp stabilization with improved editor reliability and multiple fixes.
+= 2.7.2 =
+Media Folders sticky sidebar with persistent tree state, GLightbox caption fix on mobile, and grid counter sync improvements.

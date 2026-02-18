@@ -134,7 +134,7 @@ class Responsive_Lightbox_Settings_Addons extends Responsive_Lightbox_Settings_B
 	 * @return string
 	 */
 	private static function fetch_addons_feed() {
-		$feed = wp_remote_get( 'http://www.dfactory.co/?feed=addons&product=responsive-lightbox', [ 'sslverify' => false ] );
+		$feed = wp_remote_get( 'https://www.dfactory.co/?feed=addons&product=responsive-lightbox', [ 'sslverify' => true ] );
 
 		if ( is_wp_error( $feed ) )
 			return '';

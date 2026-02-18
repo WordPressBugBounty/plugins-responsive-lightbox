@@ -392,7 +392,7 @@ class Responsive_Lightbox_Settings {
 		// Legacy code removed - no longer writing to $this->settings
 
 		// flush rewrite rules if needed
-		if ( current_user_can( apply_filters( 'rl_lightbox_settings_capability', $rl->options['capabilities']['active'] ? 'edit_lightbox_settings' : 'manage_options' ) ) && isset( $_POST['flush_rules'] ) && isset( $_POST['option_page'], $_POST['action'], $_POST['responsive_lightbox_builder'], $_POST['_wpnonce'] ) && $_POST['option_page'] === 'responsive_lightbox_builder' && $_POST['action'] === 'update' && ( isset( $_POST['save_rl_builder'] ) || isset( $_POST['reset_rl_builder'] ) || isset( $_POST['save_responsive_lightbox_builder'] ) || isset( $_POST['reset_responsive_lightbox_builder'] ) ) && check_admin_referer( 'responsive_lightbox_builder-options', '_wpnonce' ) !== false )
+		if ( current_user_can( apply_filters( 'rl_lightbox_settings_capability', $rl->options['capabilities']['active'] ? 'edit_lightbox_settings' : 'manage_options' ) ) && isset( $_POST['flush_rules'] ) && isset( $_POST['option_page'], $_POST['action'], $_POST['responsive_lightbox_builder'], $_POST['_wpnonce'] ) && $_POST['option_page'] === 'responsive_lightbox_builder' && $_POST['action'] === 'update' && ( isset( $_POST['save_rl_builder'] ) || isset( $_POST['reset_rl_builder'] ) || isset( $_POST['save_responsive_lightbox_builder'] ) || isset( $_POST['reset_responsive_lightbox_builder'] ) ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'responsive_lightbox_builder-options' ) )
 			flush_rewrite_rules();
 	}
 

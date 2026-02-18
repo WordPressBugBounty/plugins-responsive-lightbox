@@ -2,7 +2,7 @@
 /*
 Plugin Name: Responsive Lightbox & Gallery
 Description: Responsive Lightbox & Gallery allows users to create galleries and view larger versions of images, galleries and videos in a lightbox (overlay) effect optimized for mobile devices.
-Version: 2.7.1
+Version: 2.7.2
 Author: dFactory
 Author URI: http://www.dfactory.co/
 Plugin URI: http://www.dfactory.co/products/responsive-lightbox/
@@ -45,7 +45,7 @@ include_once( RESPONSIVE_LIGHTBOX_PATH . 'includes' . DIRECTORY_SEPARATOR . 'fun
  * Responsive Lightbox class.
  *
  * @class Responsive_Lightbox
- * @version	2.7.1
+ * @version	2.7.2
  */
 class Responsive_Lightbox {
 
@@ -284,7 +284,7 @@ class Responsive_Lightbox {
 			'origin_left'		=> true,
 			'origin_top'		=> true
 		],
-		'version' => '2.7.1',
+		'version' => '2.7.2',
 		'activation_date' => ''
 	];
 	public $options = [];
@@ -380,9 +380,9 @@ class Responsive_Lightbox {
 		}
 
 		// add default galleries options
-		$this->options['basicgrid_gallery'] = array_merge( $this->defaults['basicgrid_gallery'], ( ( $array = get_option( 'responsive_lightbox_basicgrid_gallery', $this->defaults['basicgrid_gallery'] ) ) == false ? [] : $array ) );
-		$this->options['basicslider_gallery'] = array_merge( $this->defaults['basicslider_gallery'], ( ( $array = get_option( 'responsive_lightbox_basicslider_gallery', $this->defaults['basicslider_gallery'] ) ) == false ? [] : $array ) );
-		$this->options['basicmasonry_gallery'] = array_merge( $this->defaults['basicmasonry_gallery'], ( ( $array = get_option( 'responsive_lightbox_basicmasonry_gallery', $this->defaults['basicmasonry_gallery'] ) ) == false ? [] : $array ) );
+		$this->options['basicgrid_gallery'] = array_merge( $this->defaults['basicgrid_gallery'], ( ( $array = get_option( 'responsive_lightbox_basicgrid_gallery', $this->defaults['basicgrid_gallery'] ) ) === false ? [] : $array ) );
+		$this->options['basicslider_gallery'] = array_merge( $this->defaults['basicslider_gallery'], ( ( $array = get_option( 'responsive_lightbox_basicslider_gallery', $this->defaults['basicslider_gallery'] ) ) === false ? [] : $array ) );
+		$this->options['basicmasonry_gallery'] = array_merge( $this->defaults['basicmasonry_gallery'], ( ( $array = get_option( 'responsive_lightbox_basicmasonry_gallery', $this->defaults['basicmasonry_gallery'] ) ) === false ? [] : $array ) );
 
 		// set current lightbox script
 		$this->current_script = $this->options['settings']['script'];
@@ -1067,7 +1067,7 @@ class Responsive_Lightbox {
 			$other = sanitize_text_field( $_POST['other'] );
 
 			// avoid fake submissions
-			if ( $option_id == 6 && $other == '' )
+			if ( $option_id === 6 && $other === '' )
 				wp_send_json_success();
 
 			wp_remote_post(
@@ -1321,13 +1321,16 @@ class Responsive_Lightbox {
 		$breadcrumbs = [];
 
 		// get page
-		$page_raw = isset( $_GET['page'] ) ? wp_unslash( $_GET['page'] ) : '';
+		$page_raw = isset( $_GET['page'] ) ? sanitize_text_field( wp_unslash( $_GET['page'] ) ) : '';
 		$page_parts = $page_raw !== '' ? explode( '&', $page_raw, 2 ) : [ '' ];
 		$page = $page_parts[0] !== '' ? sanitize_key( $page_parts[0] ) : '';
 		$page_args = [];
 
 		if ( ! empty( $page_parts[1] ) )
 			parse_str( $page_parts[1], $page_args );
+
+		// sanitize all page_args to prevent XSS
+		$page_args = array_map( 'sanitize_text_field', $page_args );
 
 		// get tabs from Settings API
 		$api_pages = $this->settings_api->get_pages();
@@ -2164,6 +2167,55 @@ class Responsive_Lightbox {
 			return false;
 
 		return [ 'r' => hexdec( $r ), 'g' => hexdec( $g ), 'b' => hexdec( $b ) ];
+	}
+
+	/**
+	 * Check rate limit for AJAX actions to prevent abuse.
+	 *
+	 * @param string $action The action name to rate limit.
+	 * @param int $max_requests Maximum number of requests allowed in time window.
+	 * @param int $time_window Time window in seconds.
+	 * @return bool True if request is allowed, false if rate limit exceeded.
+	 */
+	public function check_rate_limit( $action, $max_requests = 30, $time_window = 60 ) {
+		$current_user_id = get_current_user_id();
+
+		// skip rate limiting for administrators
+		if ( $current_user_id && current_user_can( 'manage_options' ) ) {
+			return true;
+		}
+
+		// Get client IP with fallbacks for various server configurations
+		$client_ip = '127.0.0.1';
+		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
+			$client_ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
+		} elseif ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+			// Handle proxied requests - extract first IP if multiple are present
+			$forwarded_ips = explode( ',', sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) );
+			$client_ip = trim( $forwarded_ips[0] );
+		} elseif ( ! empty( $_SERVER['HTTP_CLIENT_IP'] ) ) {
+			$client_ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_CLIENT_IP'] ) );
+		}
+
+		// Validate IP address format
+		if ( ! filter_var( $client_ip, FILTER_VALIDATE_IP ) ) {
+			$client_ip = '127.0.0.1';
+		}
+
+		$transient_key = 'rl_rate_limit_' . $action . '_' . ( $current_user_id ? $current_user_id : md5( $client_ip ) );
+		$requests = get_transient( $transient_key );
+
+		if ( false === $requests ) {
+			set_transient( $transient_key, 1, $time_window );
+			return true;
+		}
+
+		if ( $requests >= $max_requests ) {
+			return false;
+		}
+
+		set_transient( $transient_key, $requests + 1, $time_window );
+		return true;
 	}
 }
 

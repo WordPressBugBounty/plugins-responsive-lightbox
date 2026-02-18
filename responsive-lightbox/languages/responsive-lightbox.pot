@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Responsive Lightbox\n"
-"POT-Creation-Date: 2026-02-11 12:30+0100\n"
+"POT-Creation-Date: 2026-02-18 17:53+0100\n"
 "PO-Revision-Date: 2015-05-12 12:06+0100\n"
 "Last-Translator: Bartosz Arendt <info@dfactory.eu>\n"
 "Language-Team: dFactory <info@dfactory.eu>\n"
@@ -18,161 +18,178 @@ msgstr ""
 "X-Poedit-SearchPath-0: .\n"
 "X-Poedit-SearchPathExcluded-0: node_modules\n"
 
-#: includes/class-folders.php:123
+#: includes/class-folders.php:126
 #: includes/settings/class-settings-folders.php:165
 msgid "Media Tags"
 msgstr ""
 
-#: includes/class-folders.php:124
+#: includes/class-folders.php:127
 msgid "Media Tag"
 msgstr ""
 
-#: includes/class-folders.php:125
+#: includes/class-folders.php:128
 msgid "Search Tags"
 msgstr ""
 
-#: includes/class-folders.php:126
+#: includes/class-folders.php:129
 msgid "All Tags"
 msgstr ""
 
-#: includes/class-folders.php:127
+#: includes/class-folders.php:130
 msgid "Edit Tag"
 msgstr ""
 
-#: includes/class-folders.php:128
+#: includes/class-folders.php:131
 msgid "Update Tag"
 msgstr ""
 
-#: includes/class-folders.php:129
+#: includes/class-folders.php:132
 msgid "Add New Tag"
 msgstr ""
 
-#: includes/class-folders.php:130
+#: includes/class-folders.php:133
 msgid "New Tag Name"
 msgstr ""
 
-#: includes/class-folders.php:131
+#: includes/class-folders.php:134
 msgid "No tags found."
 msgstr ""
 
-#: includes/class-folders.php:132
+#: includes/class-folders.php:135
 #: includes/settings/class-settings-builder.php:95 responsive-lightbox.php:1219
-#: responsive-lightbox.php:1480 responsive-lightbox.php:1491
+#: responsive-lightbox.php:1483 responsive-lightbox.php:1494
 msgid "Tags"
 msgstr ""
 
-#: includes/class-folders.php:284
+#: includes/class-folders.php:287 includes/class-folders.php:1714
 msgid "Media Folders"
 msgstr ""
 
-#: includes/class-folders.php:285 includes/class-galleries.php:272
-#: includes/class-galleries.php:455
+#: includes/class-folders.php:288 includes/class-galleries.php:272
+#: includes/galleries/class-gallery-images.php:358
 msgid "Media Folder"
 msgstr ""
 
-#: includes/class-folders.php:286
+#: includes/class-folders.php:289
 msgid "Search Folders"
 msgstr ""
 
-#: includes/class-folders.php:287 includes/class-folders.php:532
-#: includes/class-folders.php:545 includes/class-folders.php:1400
-#: includes/class-folders.php:1430 includes/class-folders.php:1453
-#: includes/class-folders.php:1462
+#: includes/class-folders.php:290 includes/class-folders.php:538
+#: includes/class-folders.php:551 includes/class-folders.php:1585
+#: includes/class-folders.php:1622 includes/class-folders.php:1645
+#: includes/class-folders.php:1669 includes/class-folders.php:1678
 msgid "All Files"
 msgstr ""
 
-#: includes/class-folders.php:288
+#: includes/class-folders.php:291
 msgid "Parent Folder"
 msgstr ""
 
-#: includes/class-folders.php:289
+#: includes/class-folders.php:292
 msgid "Parent Folder:"
 msgstr ""
 
-#: includes/class-folders.php:290
+#: includes/class-folders.php:293
 msgid "Edit Folder"
 msgstr ""
 
-#: includes/class-folders.php:291
+#: includes/class-folders.php:294
 msgid "Update Folder"
 msgstr ""
 
-#: includes/class-folders.php:292
+#: includes/class-folders.php:295
 msgid "Add New Folder"
 msgstr ""
 
-#: includes/class-folders.php:293
+#: includes/class-folders.php:296
 msgid "New Folder Name"
 msgstr ""
 
-#: includes/class-folders.php:294
+#: includes/class-folders.php:297
 msgid "No folders found."
 msgstr ""
 
-#: includes/class-folders.php:295 includes/class-settings-pages.php:107
+#: includes/class-folders.php:298 includes/class-settings-pages.php:107
 #: includes/galleries/class-gallery-images.php:48
 #: includes/settings/class-settings-folders.php:131
 msgid "Folders"
 msgstr ""
 
-#: includes/class-folders.php:405 includes/class-folders.php:419
-#: includes/class-folders.php:471 includes/class-folders.php:485
-#: includes/class-folders.php:676 includes/class-folders.php:1403
-#: includes/class-folders.php:1425 includes/class-folders.php:1452
-#: includes/galleries/class-gallery-base.php:393
-#: includes/galleries/class-gallery-base.php:407
+#: includes/class-folders.php:411 includes/class-folders.php:425
+#: includes/class-folders.php:477 includes/class-folders.php:491
+#: includes/class-folders.php:709 includes/class-folders.php:1588
+#: includes/class-folders.php:1617 includes/class-folders.php:1640
+#: includes/class-folders.php:1668
+#: includes/galleries/class-gallery-base.php:461
+#: includes/galleries/class-gallery-base.php:475
 msgid "Root Folder"
 msgstr ""
 
-#: includes/class-folders.php:490
+#: includes/class-folders.php:496
 msgid "Upload files to"
 msgstr ""
 
-#: includes/class-folders.php:1454
+#: includes/class-folders.php:858 includes/class-remote-library.php:301
+#: includes/class-remote-library.php:404
+#: includes/galleries/trait-gallery-ajax.php:48
+#: includes/galleries/trait-gallery-ajax.php:149
+#: includes/galleries/trait-gallery-ajax.php:292
+msgid "Rate limit exceeded. Please try again later."
+msgstr ""
+
+#: includes/class-folders.php:1670 includes/class-folders.php:1715
 msgid "New Folder"
 msgstr ""
 
-#: includes/class-folders.php:1455
+#: includes/class-folders.php:1671
 msgid "Are you sure you want to delete this folder?"
 msgstr ""
 
-#: includes/class-folders.php:1456
+#: includes/class-folders.php:1672
 msgid "Are you sure you want to delete this folder with all subfolders?"
 msgstr ""
 
-#: includes/class-folders.php:1478
+#: includes/class-folders.php:1694
 #, php-format
 msgid "Save new %s"
 msgstr ""
 
-#: includes/class-folders.php:1479
+#: includes/class-folders.php:1695
 #, php-format
 msgid "Cancel adding new %s"
 msgstr ""
 
-#: includes/class-folders.php:1481
+#: includes/class-folders.php:1697
 #, php-format
 msgid "Save %s"
 msgstr ""
 
-#: includes/class-folders.php:1482
+#: includes/class-folders.php:1698
 #, php-format
 msgid "Cancel renaming %s"
 msgstr ""
 
-#: includes/class-folders.php:1483
+#: includes/class-folders.php:1699
 #, php-format
 msgid "Delete %s"
 msgstr ""
 
-#: includes/class-folders.php:1484
+#: includes/class-folders.php:1700
 #, php-format
 msgid "Expand %s"
 msgstr ""
 
-#: includes/class-folders.php:1485
+#: includes/class-folders.php:1701
 #, php-format
 msgid "Collapse %s"
+msgstr ""
+
+#: includes/class-folders.php:1722
+msgid "Resize folders sidebar"
+msgstr ""
+
+#: includes/class-folders.php:1723 includes/class-folders.php:1725
+msgid "Toggle folders sidebar"
 msgstr ""
 
 #: includes/class-frontend.php:650
@@ -217,18 +234,19 @@ msgstr ""
 msgid "Specify how to sort the display thumbnails."
 msgstr ""
 
-#: includes/class-frontend.php:673 includes/class-galleries.php:345
-#: includes/class-widgets.php:146
+#: includes/class-frontend.php:673 includes/class-widgets.php:146
+#: includes/galleries/class-gallery-images.php:234
 msgid "ID"
 msgstr ""
 
-#: includes/class-frontend.php:674 includes/class-galleries.php:347
-#: includes/class-widgets.php:144 includes/class-widgets.php:231
-#: includes/class-widgets.php:638
+#: includes/class-frontend.php:674 includes/class-widgets.php:144
+#: includes/class-widgets.php:231 includes/class-widgets.php:638
+#: includes/galleries/class-gallery-images.php:236
 msgid "Title"
 msgstr ""
 
-#: includes/class-frontend.php:675 includes/class-galleries.php:349
+#: includes/class-frontend.php:675
+#: includes/galleries/class-gallery-images.php:238
 msgid "Date"
 msgstr ""
 
@@ -236,8 +254,8 @@ msgstr ""
 msgid "Menu Order"
 msgstr ""
 
-#: includes/class-frontend.php:677 includes/class-galleries.php:352
-#: includes/class-widgets.php:147
+#: includes/class-frontend.php:677 includes/class-widgets.php:147
+#: includes/galleries/class-gallery-images.php:241
 msgid "Random"
 msgstr ""
 
@@ -249,13 +267,13 @@ msgstr ""
 msgid "Specify the sort order."
 msgstr ""
 
-#: includes/class-frontend.php:686 includes/class-galleries.php:361
-#: includes/class-widgets.php:151
+#: includes/class-frontend.php:686 includes/class-widgets.php:151
+#: includes/galleries/class-gallery-images.php:250
 msgid "Ascending"
 msgstr ""
 
-#: includes/class-frontend.php:687 includes/class-galleries.php:362
-#: includes/class-widgets.php:152
+#: includes/class-frontend.php:687 includes/class-widgets.php:152
+#: includes/galleries/class-gallery-images.php:251
 msgid "Descending"
 msgstr ""
 
@@ -267,7 +285,7 @@ msgstr ""
 msgid "Specify the number of columns."
 msgstr ""
 
-#: includes/class-galleries.php:135 includes/class-galleries.php:2133
+#: includes/class-galleries.php:135 includes/class-galleries.php:1271
 msgid "Status"
 msgstr ""
 
@@ -275,13 +293,13 @@ msgstr ""
 msgid "Edit image"
 msgstr ""
 
-#: includes/class-galleries.php:137 responsive-lightbox.php:1810
+#: includes/class-galleries.php:137 responsive-lightbox.php:1813
 msgid "Remove image"
 msgstr ""
 
 #: includes/class-galleries.php:232 includes/class-galleries.php:283
 #: includes/class-galleries.php:294
-#: includes/galleries/class-gallery-config.php:56
+#: includes/galleries/class-gallery-config.php:52
 #: includes/galleries/class-gallery-design.php:40
 #: includes/galleries/class-gallery-lightbox.php:44
 #: includes/galleries/class-gallery-lightbox.php:48
@@ -298,7 +316,7 @@ msgstr ""
 msgid "The settings below adjust the contents of the gallery."
 msgstr ""
 
-#: includes/class-galleries.php:242 includes/class-galleries.php:2628
+#: includes/class-galleries.php:242 includes/class-galleries.php:1792
 #: includes/galleries/class-gallery-api.php:213
 #: includes/galleries/class-gallery-images.php:46
 #: includes/galleries/class-gallery-images.php:69
@@ -336,8 +354,8 @@ msgid "The settings below adjust the gallery pagination options."
 msgstr ""
 
 #: includes/class-galleries.php:260 includes/class-settings-pages.php:166
-#: includes/class-settings.php:419
-#: includes/galleries/class-gallery-config.php:228
+#: includes/class-settings.php:469
+#: includes/galleries/class-gallery-config.php:224
 msgid "Lightbox"
 msgstr ""
 
@@ -381,326 +399,174 @@ msgstr ""
 msgid "Bottom"
 msgstr ""
 
-#: includes/class-galleries.php:333
-msgid "Number of Posts"
-msgstr ""
-
-#: includes/class-galleries.php:335
-msgid "Enter the number of posts."
-msgstr ""
-
-#: includes/class-galleries.php:340
-msgid "Posts Sorting"
-msgstr ""
-
-#: includes/class-galleries.php:342
-msgid "Select the posts sorting."
-msgstr ""
-
-#: includes/class-galleries.php:346
-msgid "Author"
-msgstr ""
-
-#: includes/class-galleries.php:348
-msgid "Slug"
-msgstr ""
-
-#: includes/class-galleries.php:350
-msgid "Last modified date"
-msgstr ""
-
-#: includes/class-galleries.php:351
-msgid "Parent ID"
-msgstr ""
-
-#: includes/class-galleries.php:356
-msgid "Posts Order"
-msgstr ""
-
-#: includes/class-galleries.php:358
-msgid "Select the posts order."
-msgstr ""
-
-#: includes/class-galleries.php:366
-msgid "Posts Offset"
-msgstr ""
-
-#: includes/class-galleries.php:368
-msgid "Enter the posts offset."
-msgstr ""
-
-#: includes/class-galleries.php:373
-msgid "Image Source"
-msgstr ""
-
-#: includes/class-galleries.php:375
-msgid "Select the image source."
-msgstr ""
-
-#: includes/class-galleries.php:378
-msgid "Post Thumbnails"
-msgstr ""
-
-#: includes/class-galleries.php:379
-msgid "Post Attached Images"
-msgstr ""
-
-#: includes/class-galleries.php:383
-msgid "Images per Post"
-msgstr ""
-
-#: includes/class-galleries.php:385
-msgid "Enter maximum number of images for a post."
-msgstr ""
-
-#: includes/class-galleries.php:390
-msgid "Post Type"
-msgstr ""
-
-#: includes/class-galleries.php:392
-msgid "Select the post types to query."
-msgstr ""
-
-#: includes/class-galleries.php:397
-msgid "Post Status"
-msgstr ""
-
-#: includes/class-galleries.php:399
-msgid "Select the post status."
-msgstr ""
-
-#: includes/class-galleries.php:404
-msgid "Post Format"
-msgstr ""
-
-#: includes/class-galleries.php:406
-msgid "Select the post format."
-msgstr ""
-
-#: includes/class-galleries.php:411
-msgid "Post Term"
-msgstr ""
-
-#: includes/class-galleries.php:413
-msgid "Select the post taxonomy terms to query."
-msgstr ""
-
-#: includes/class-galleries.php:418
-msgid "Post Author"
-msgstr ""
-
-#: includes/class-galleries.php:420
-msgid "Select the post author."
-msgstr ""
-
-#: includes/class-galleries.php:425
-msgid "Page Parent"
-msgstr ""
-
-#: includes/class-galleries.php:427
-msgid "Select the post parent."
-msgstr ""
-
-#: includes/class-galleries.php:432
-msgid "Page Template"
-msgstr ""
-
-#: includes/class-galleries.php:434
-msgid "Select the page template."
-msgstr ""
-
-#: includes/class-galleries.php:457
-msgid "Select media folder."
-msgstr ""
-
-#: includes/class-galleries.php:482
-msgid "Search String"
-msgstr ""
-
-#: includes/class-galleries.php:484
-msgid "Enter the search phrase."
-msgstr ""
-
-#: includes/class-galleries.php:488
-msgid "Media Provider"
-msgstr ""
-
-#: includes/class-galleries.php:490
-msgid "Select which remote library should be used."
-msgstr ""
-
-#: includes/class-galleries.php:493
-msgid "All Media Providers"
-msgstr ""
-
-#: includes/class-galleries.php:776
+#: includes/class-galleries.php:555
 msgid "Add Gallery"
 msgstr ""
 
-#: includes/class-galleries.php:853 includes/class-galleries.php:854
+#: includes/class-galleries.php:632 includes/class-galleries.php:633
 msgid "All categories"
 msgstr ""
 
-#: includes/class-galleries.php:873 includes/class-tour.php:280
+#: includes/class-galleries.php:652 includes/class-tour.php:280
 msgid "Close"
 msgstr ""
 
-#: includes/class-galleries.php:877
+#: includes/class-galleries.php:656
 msgid "Insert Gallery"
 msgstr ""
 
-#: includes/class-galleries.php:877
+#: includes/class-galleries.php:656
 msgid "Reload"
 msgstr ""
 
-#: includes/class-galleries.php:883
+#: includes/class-galleries.php:662
 msgid "No items found."
 msgstr ""
 
-#: includes/class-galleries.php:885
+#: includes/class-galleries.php:664
 msgid "No galleries? Create them first or try another search phrase."
 msgstr ""
 
-#: includes/class-galleries.php:890
+#: includes/class-galleries.php:669
 msgid "Filter by category"
 msgstr ""
 
-#: includes/class-galleries.php:892
+#: includes/class-galleries.php:671
 msgid "Search galleries"
 msgstr ""
 
-#: includes/class-galleries.php:898
+#: includes/class-galleries.php:677
 msgid "Select A Gallery"
 msgstr ""
 
-#: includes/class-galleries.php:899
+#: includes/class-galleries.php:678
 msgid "To select a gallery simply click on one of the boxes to the left."
 msgstr ""
 
-#: includes/class-galleries.php:900
+#: includes/class-galleries.php:679
 msgid ""
 "To insert your gallery into the editor, click on the \"Insert Gallery\" "
 "button below."
 msgstr ""
 
-#: includes/class-galleries.php:909 includes/class-galleries.php:1667
-#: includes/galleries/trait-gallery-ajax.php:130
+#: includes/class-galleries.php:688
+#: includes/galleries/trait-gallery-ajax.php:135
 #, php-format
 msgid "%s image"
 msgstr ""
 
-#: includes/class-galleries.php:910 responsive-lightbox.php:1430
+#: includes/class-galleries.php:689 responsive-lightbox.php:1433
 msgid "Edit gallery"
 msgstr ""
 
-#: includes/class-galleries.php:920
+#: includes/class-galleries.php:699
 msgid "Insert gallery into post"
 msgstr ""
 
-#: includes/class-galleries.php:921
+#: includes/class-galleries.php:700
 msgid "Select gallery"
 msgstr ""
 
-#: includes/class-galleries.php:922 responsive-lightbox.php:1039
+#: includes/class-galleries.php:701 responsive-lightbox.php:1039
 msgid "Cancel"
 msgstr ""
 
-#: includes/class-galleries.php:1030
+#: includes/class-galleries.php:809
 msgid "Gallery Code"
 msgstr ""
 
-#: includes/class-galleries.php:2044
+#: includes/class-galleries.php:1182
 msgid "Untitled"
 msgstr ""
 
-#: includes/class-galleries.php:2125
+#: includes/class-galleries.php:1263
 msgid "Aside"
 msgstr ""
 
-#: includes/class-galleries.php:2126
+#: includes/class-galleries.php:1264
 msgid "Audio"
 msgstr ""
 
-#: includes/class-galleries.php:2127
+#: includes/class-galleries.php:1265
 msgid "Chat"
 msgstr ""
 
-#: includes/class-galleries.php:2128 includes/class-galleries.php:2482
+#: includes/class-galleries.php:1266 includes/class-galleries.php:1650
 #: includes/class-widgets.php:124 includes/class-widgets.php:132
 #: responsive-lightbox.php:1247 responsive-lightbox.php:1258
 msgid "Gallery"
 msgstr ""
 
-#: includes/class-galleries.php:2129
+#: includes/class-galleries.php:1267
 msgid "Link"
 msgstr ""
 
-#: includes/class-galleries.php:2130
+#: includes/class-galleries.php:1268
 msgid "Photo"
 msgstr ""
 
-#: includes/class-galleries.php:2131
+#: includes/class-galleries.php:1269
 msgid "Quote"
 msgstr ""
 
-#: includes/class-galleries.php:2132
+#: includes/class-galleries.php:1270
 msgid "Standard"
 msgstr ""
 
-#: includes/class-galleries.php:2134
+#: includes/class-galleries.php:1272
 msgid "Video"
 msgstr ""
 
-#: includes/class-galleries.php:2232
+#: includes/class-galleries.php:1370
 msgid "Default Template"
 msgstr ""
 
-#: includes/class-galleries.php:2462
+#: includes/class-galleries.php:1630
 msgid ""
 "You can place this gallery anywhere into your posts, pages, custom post "
 "types or widgets by using the shortcode below"
 msgstr ""
 
-#: includes/class-galleries.php:2464
+#: includes/class-galleries.php:1632
 msgid ""
 "You can also place this gallery into your template files by using the "
 "template tag below"
 msgstr ""
 
-#: includes/class-galleries.php:2491
+#: includes/class-galleries.php:1659
 msgid "Shortcode"
 msgstr ""
 
-#: includes/class-galleries.php:2492
+#: includes/class-galleries.php:1660
 msgid "Type"
 msgstr ""
 
-#: includes/class-galleries.php:2493
+#: includes/class-galleries.php:1661
 msgid "Source"
 msgstr ""
 
-#: includes/class-galleries.php:2522
+#: includes/class-galleries.php:1687
 #, php-format
 msgid "%s element"
 msgstr ""
 
-#: includes/class-galleries.php:2626
+#: includes/class-galleries.php:1790
 msgid "Select gallery featured image source:"
 msgstr ""
 
-#: includes/class-galleries.php:2627
+#: includes/class-galleries.php:1791
 msgid "First gallery image"
 msgstr ""
 
-#: includes/class-galleries.php:2629 includes/class-widgets.php:509
+#: includes/class-galleries.php:1793 includes/class-widgets.php:509
 msgid "Custom URL"
 msgstr ""
 
-#: includes/class-galleries.php:2635
+#: includes/class-galleries.php:1799
 msgid "Custom featured image URL"
 msgstr ""
 
-#: includes/class-galleries.php:2637
+#: includes/class-galleries.php:1801
 msgid "Dynamically generated first gallery image"
 msgstr ""
 
@@ -744,43 +610,47 @@ msgstr ""
 msgid "Filter by remote library"
 msgstr ""
 
-#: includes/class-remote-library.php:301
+#: includes/class-remote-library.php:306
 msgid "Insufficient permissions."
 msgstr ""
 
-#: includes/class-remote-library.php:305
+#: includes/class-remote-library.php:310
 msgid "Invalid nonce."
 msgstr ""
 
-#: includes/class-remote-library.php:454 includes/class-remote-library.php:472
+#: includes/class-remote-library.php:441
+msgid "Invalid image URL."
+msgstr ""
+
+#: includes/class-remote-library.php:479 includes/class-remote-library.php:500
 msgid "Image size exceeds maximum allowed size."
 msgstr ""
 
-#: includes/class-remote-library.php:547
+#: includes/class-remote-library.php:575
 msgid "Invalid MIME type"
 msgstr ""
 
-#: includes/class-remote-library.php:555
+#: includes/class-remote-library.php:583
 msgid "Invalid image type"
 msgstr ""
 
-#: includes/class-remote-library.php:565
+#: includes/class-remote-library.php:594
 msgid "Invalid host"
 msgstr ""
 
-#: includes/class-remote-library.php:569
+#: includes/class-remote-library.php:598
 msgid "Missing or invalid image data"
 msgstr ""
 
-#: includes/class-remote-library.php:573
+#: includes/class-remote-library.php:602
 msgid "Invalid media provider"
 msgstr ""
 
-#: includes/class-remote-library.php:577
+#: includes/class-remote-library.php:606
 msgid "Access denied"
 msgstr ""
 
-#: includes/class-remote-library.php:605
+#: includes/class-remote-library.php:634
 msgid "F j Y"
 msgstr ""
 
@@ -789,7 +659,7 @@ msgid "Reset to defaults"
 msgstr ""
 
 #: includes/class-settings-api.php:570 includes/class-settings-pages.php:50
-#: includes/class-settings-pages.php:73 responsive-lightbox.php:1400
+#: includes/class-settings-pages.php:73 responsive-lightbox.php:1403
 msgid "(default)"
 msgstr ""
 
@@ -963,11 +833,11 @@ msgid "Lightboxes"
 msgstr ""
 
 #: includes/class-settings-pages.php:98
-#: includes/galleries/class-gallery-config.php:231
+#: includes/galleries/class-gallery-config.php:227
 #: includes/settings/class-settings-general.php:143
-#: responsive-lightbox.php:1246 responsive-lightbox.php:1419
-#: responsive-lightbox.php:1425 responsive-lightbox.php:1436
-#: responsive-lightbox.php:1451
+#: responsive-lightbox.php:1246 responsive-lightbox.php:1422
+#: responsive-lightbox.php:1428 responsive-lightbox.php:1439
+#: responsive-lightbox.php:1454
 msgid "Galleries"
 msgstr ""
 
@@ -991,7 +861,7 @@ msgid "Add-ons"
 msgstr ""
 
 #: includes/class-settings-pages.php:165 includes/class-settings.php:105
-#: responsive-lightbox.php:1503
+#: responsive-lightbox.php:1506
 msgid "Responsive Lightbox & Gallery"
 msgstr ""
 
@@ -1229,7 +1099,7 @@ msgstr ""
 
 #: includes/class-welcome.php:68
 #: includes/settings/class-settings-lightboxes.php:121
-#: responsive-lightbox.php:991 responsive-lightbox.php:1372
+#: responsive-lightbox.php:991 responsive-lightbox.php:1375
 msgid "Settings"
 msgstr ""
 
@@ -1307,8 +1177,8 @@ msgstr ""
 msgid "Default"
 msgstr ""
 
-#: includes/class-widgets.php:238 includes/galleries/class-gallery-base.php:537
-#: responsive-lightbox.php:1811
+#: includes/class-widgets.php:238 includes/galleries/class-gallery-base.php:605
+#: responsive-lightbox.php:1814
 msgid "Select images"
 msgstr ""
 
@@ -1368,7 +1238,7 @@ msgstr ""
 msgid "Justify"
 msgstr ""
 
-#: includes/class-widgets.php:643 responsive-lightbox.php:1812
+#: includes/class-widgets.php:643 responsive-lightbox.php:1815
 msgid "Select image"
 msgstr ""
 
@@ -1408,46 +1278,46 @@ msgstr ""
 msgid "Text align"
 msgstr ""
 
-#: includes/galleries/class-gallery-api.php:396
+#: includes/galleries/class-gallery-api.php:398
 msgid ""
 "Images tab menu metadata is unavailable. Please refresh the page or check "
 "the adapter configuration."
 msgstr ""
 
-#: includes/galleries/class-gallery-base.php:417
+#: includes/galleries/class-gallery-base.php:485
 msgid "Include children."
 msgstr ""
 
-#: includes/galleries/class-gallery-base.php:457
+#: includes/galleries/class-gallery-base.php:525
 msgid "Update preview"
 msgstr ""
 
-#: includes/galleries/class-gallery-base.php:458
+#: includes/galleries/class-gallery-base.php:526
 msgid ""
 "Use this button after any change of the options below to see updated gallery "
 "preview."
 msgstr ""
 
-#: includes/galleries/class-gallery-base.php:535
-#: includes/galleries/class-gallery-base.php:538
+#: includes/galleries/class-gallery-base.php:603
+#: includes/galleries/class-gallery-base.php:606
 msgid "Select images & videos"
 msgstr ""
 
-#: includes/galleries/class-gallery-base.php:540
+#: includes/galleries/class-gallery-base.php:608
 msgid "HTML5 Videos and Embed Videos available only in %l."
 msgstr ""
 
-#: includes/galleries/class-gallery-base.php:559
-#: includes/galleries/class-gallery-base.php:561
+#: includes/galleries/class-gallery-base.php:627
+#: includes/galleries/class-gallery-base.php:629
 msgid "Embed videos"
 msgstr ""
 
-#: includes/galleries/class-gallery-config.php:236
+#: includes/galleries/class-gallery-config.php:232
 #, php-format
 msgid "Settings below are controlled globally in %1$s &rarr; %2$s &rarr; %3$s."
 msgstr ""
 
-#: includes/galleries/class-gallery-config.php:236
+#: includes/galleries/class-gallery-config.php:232
 #, php-format
 msgid "Edit Global %s Settings ->"
 msgstr ""
@@ -1544,6 +1414,158 @@ msgstr ""
 
 #: includes/galleries/class-gallery-images.php:114
 msgid "Media Folders are disabled. Enable it in the settings."
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:222
+msgid "Number of Posts"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:224
+msgid "Enter the number of posts."
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:229
+msgid "Posts Sorting"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:231
+msgid "Select the posts sorting."
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:235
+msgid "Author"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:237
+msgid "Slug"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:239
+msgid "Last modified date"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:240
+msgid "Parent ID"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:245
+msgid "Posts Order"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:247
+msgid "Select the posts order."
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:255
+msgid "Posts Offset"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:257
+msgid "Enter the posts offset."
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:262
+msgid "Image Source"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:264
+msgid "Select the image source."
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:267
+msgid "Post Thumbnails"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:268
+msgid "Post Attached Images"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:272
+msgid "Images per Post"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:274
+msgid "Enter maximum number of images for a post."
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:279
+msgid "Post Type"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:281
+msgid "Select the post types to query."
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:286
+msgid "Post Status"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:288
+msgid "Select the post status."
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:293
+msgid "Post Format"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:295
+msgid "Select the post format."
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:300
+msgid "Post Term"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:302
+msgid "Select the post taxonomy terms to query."
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:307
+msgid "Post Author"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:309
+msgid "Select the post author."
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:314
+msgid "Page Parent"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:316
+msgid "Select the post parent."
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:321
+msgid "Page Template"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:323
+msgid "Select the page template."
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:360
+msgid "Select media folder."
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:379
+msgid "All Media Providers"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:409
+msgid "Search String"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:411
+msgid "Enter the search phrase."
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:415
+msgid "Media Provider"
+msgstr ""
+
+#: includes/galleries/class-gallery-images.php:417
+msgid "Select which remote library should be used."
 msgstr ""
 
 #: includes/galleries/class-gallery-lightbox.php:54
@@ -1694,36 +1716,36 @@ msgstr ""
 msgid "On click"
 msgstr ""
 
-#: includes/galleries/trait-gallery-ajax.php:215
+#: includes/galleries/trait-gallery-ajax.php:225
 msgid "(no title)"
 msgstr ""
 
-#: includes/galleries/trait-gallery-ajax.php:229
+#: includes/galleries/trait-gallery-ajax.php:239
 msgid "Deselect"
 msgstr ""
 
-#: includes/galleries/trait-gallery-ajax.php:513
+#: includes/galleries/trait-gallery-ajax.php:542
 msgid "First page"
 msgstr ""
 
-#: includes/galleries/trait-gallery-ajax.php:524
+#: includes/galleries/trait-gallery-ajax.php:553
 msgid "Previous page"
 msgstr ""
 
-#: includes/galleries/trait-gallery-ajax.php:531
+#: includes/galleries/trait-gallery-ajax.php:560
 msgid "Current Page"
 msgstr ""
 
-#: includes/galleries/trait-gallery-ajax.php:537
+#: includes/galleries/trait-gallery-ajax.php:566
 #, php-format
 msgid "%1$s"
 msgstr ""
 
-#: includes/galleries/trait-gallery-ajax.php:545
+#: includes/galleries/trait-gallery-ajax.php:574
 msgid "Next page"
 msgstr ""
 
-#: includes/galleries/trait-gallery-ajax.php:556
+#: includes/galleries/trait-gallery-ajax.php:585
 msgid "Last page"
 msgstr ""
 
@@ -1748,15 +1770,15 @@ msgstr ""
 msgid "Duplicate"
 msgstr ""
 
-#: includes/galleries/trait-gallery-image-methods.php:619
+#: includes/galleries/trait-gallery-image-methods.php:634
 msgid "&laquo; Previous"
 msgstr ""
 
-#: includes/galleries/trait-gallery-image-methods.php:620
+#: includes/galleries/trait-gallery-image-methods.php:635
 msgid "Next &raquo;"
 msgstr ""
 
-#: includes/galleries/trait-gallery-image-methods.php:628
+#: includes/galleries/trait-gallery-image-methods.php:643
 msgid "Load more"
 msgstr ""
 
@@ -1852,7 +1874,7 @@ msgid "Enable advanced gallery builder."
 msgstr ""
 
 #: includes/settings/class-settings-builder.php:89 responsive-lightbox.php:1173
-#: responsive-lightbox.php:1460 responsive-lightbox.php:1471
+#: responsive-lightbox.php:1463 responsive-lightbox.php:1474
 msgid "Categories"
 msgstr ""
 
@@ -3434,121 +3456,121 @@ msgstr ""
 msgid "All Galleries"
 msgstr ""
 
-#: responsive-lightbox.php:1441
+#: responsive-lightbox.php:1444
 msgid "New gallery"
 msgstr ""
 
-#: responsive-lightbox.php:1465
+#: responsive-lightbox.php:1468
 msgid "Edit category"
 msgstr ""
 
-#: responsive-lightbox.php:1485
+#: responsive-lightbox.php:1488
 msgid "Edit tag"
 msgstr ""
 
-#: responsive-lightbox.php:1559 responsive-lightbox.php:1560
+#: responsive-lightbox.php:1562 responsive-lightbox.php:1563
 msgid "Gallery updated."
 msgstr ""
 
-#: responsive-lightbox.php:1561
+#: responsive-lightbox.php:1564
 #, php-format
 msgid "Gallery restored to revision from %s"
 msgstr ""
 
-#: responsive-lightbox.php:1562
+#: responsive-lightbox.php:1565
 msgid "Gallery published."
 msgstr ""
 
-#: responsive-lightbox.php:1563
+#: responsive-lightbox.php:1566
 msgid "Gallery saved."
 msgstr ""
 
-#: responsive-lightbox.php:1564
+#: responsive-lightbox.php:1567
 msgid "Gallery submitted."
 msgstr ""
 
-#: responsive-lightbox.php:1565
+#: responsive-lightbox.php:1568
 #, php-format
 msgid "Gallery scheduled for: <strong>%1$s</strong>."
 msgstr ""
 
-#: responsive-lightbox.php:1565
+#: responsive-lightbox.php:1568
 msgid "M j, Y @ G:i"
 msgstr ""
 
-#: responsive-lightbox.php:1566
+#: responsive-lightbox.php:1569
 msgid "Gallery draft updated."
 msgstr ""
 
-#: responsive-lightbox.php:1572
+#: responsive-lightbox.php:1575
 msgid "View gallery"
 msgstr ""
 
-#: responsive-lightbox.php:1578
+#: responsive-lightbox.php:1581
 msgid "Preview gallery"
 msgstr ""
 
-#: responsive-lightbox.php:1619
+#: responsive-lightbox.php:1622
 msgid "Are you sure you want to reset these settings to defaults?"
 msgstr ""
 
-#: responsive-lightbox.php:1621
+#: responsive-lightbox.php:1624
 msgid "An error occurred while processing taxonomies."
 msgstr ""
 
-#: responsive-lightbox.php:1622
+#: responsive-lightbox.php:1625
 msgid "An error occurred while loading taxonomies."
 msgstr ""
 
-#: responsive-lightbox.php:1645
+#: responsive-lightbox.php:1648
 msgid "Select gallery items"
 msgstr ""
 
-#: responsive-lightbox.php:1646
+#: responsive-lightbox.php:1649
 msgid "Use these items"
 msgstr ""
 
-#: responsive-lightbox.php:1647
+#: responsive-lightbox.php:1650
 msgid "Clear selected items"
 msgstr ""
 
-#: responsive-lightbox.php:1648
+#: responsive-lightbox.php:1651
 msgid "Selected gallery items"
 msgstr ""
 
-#: responsive-lightbox.php:1649
+#: responsive-lightbox.php:1652
 msgid "Edit attachment"
 msgstr ""
 
-#: responsive-lightbox.php:1650
+#: responsive-lightbox.php:1653
 msgid "Edit embed video"
 msgstr ""
 
-#: responsive-lightbox.php:1651
+#: responsive-lightbox.php:1654
 msgid "Video details"
 msgstr ""
 
-#: responsive-lightbox.php:1652
+#: responsive-lightbox.php:1655
 msgid "Save changes"
 msgstr ""
 
-#: responsive-lightbox.php:1653
+#: responsive-lightbox.php:1656
 msgid "Embed Video"
 msgstr ""
 
-#: responsive-lightbox.php:1654
+#: responsive-lightbox.php:1657
 #, php-format
 msgid "Videos can be embedded only from the following providers: %s."
 msgstr ""
 
-#: responsive-lightbox.php:1695
+#: responsive-lightbox.php:1698
 msgid "Responsive Lightbox & Gallery - Deactivation survey"
 msgstr ""
 
-#: responsive-lightbox.php:1813
+#: responsive-lightbox.php:1816
 msgid "Use these images"
 msgstr ""
 
-#: responsive-lightbox.php:1814
+#: responsive-lightbox.php:1817
 msgid "Use this image"
 msgstr ""

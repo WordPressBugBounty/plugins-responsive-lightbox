@@ -43,6 +43,11 @@ trait Responsive_Lightbox_Gallery_Ajax {
 	public function get_gallery_page( $args ) {
 		// check whether is it valid gallery ajax request
 		if ( $this->gallery_ajax_verified() ) {
+			// check rate limiting (60 requests per minute)
+			if ( ! Responsive_Lightbox()->check_rate_limit( 'rl_get_gallery_page', 60, 60 ) ) {
+				wp_send_json_error( __( 'Rate limit exceeded. Please try again later.', 'responsive-lightbox' ) );
+			}
+
 			// cast page number
 			$_GET['rl_page'] = (int) $_POST['page'];
 
@@ -139,6 +144,11 @@ trait Responsive_Lightbox_Gallery_Ajax {
 	 * @return void
 	 */
 	public function post_get_galleries() {
+		// check rate limiting (60 requests per minute)
+		if ( ! Responsive_Lightbox()->check_rate_limit( 'rl_post_get_galleries', 60, 60 ) ) {
+			wp_send_json_error( __( 'Rate limit exceeded. Please try again later.', 'responsive-lightbox' ) );
+		}
+
 		// check data
 		if ( ! isset( $_POST['post_id'], $_POST['search'], $_POST['nonce'], $_POST['page'] ) || ! check_ajax_referer( 'rl-gallery-post', 'nonce', false ) )
 			wp_send_json_error();
@@ -277,6 +287,11 @@ trait Responsive_Lightbox_Gallery_Ajax {
 	 * @return void
 	 */
 	public function get_gallery_preview_content() {
+		// check rate limiting (60 requests per minute)
+		if ( ! Responsive_Lightbox()->check_rate_limit( 'rl_get_gallery_preview_content', 60, 60 ) ) {
+			wp_send_json_error( __( 'Rate limit exceeded. Please try again later.', 'responsive-lightbox' ) );
+		}
+
 		// initial checks
 		if ( ! isset( $_POST['post_id'], $_POST['menu_item'], $_POST['nonce'], $_POST['preview_type'] ) || ! check_ajax_referer( 'rl-gallery', 'nonce', false ) )
 			wp_send_json_error();
@@ -504,18 +519,18 @@ trait Responsive_Lightbox_Gallery_Ajax {
 		$disable_first = $disable_last = $disable_prev = $disable_next = false;
 		$current_url = 'preview_page';
 
-		if ( $current == 1 ) {
+		if ( $current === 1 ) {
 			$disable_first = true;
 			$disable_prev = true;
-		} elseif ( $current == 2 )
+		} elseif ( $current === 2 )
 			$disable_first = true;
 
-		if ( $current == $total_pages ) {
+		if ( $current === $total_pages ) {
 			$disable_last = true;
 			$disable_next = true;
 		}
 
-		if ( $current == $total_pages - 1 )
+		if ( $current === $total_pages - 1 )
 			$disable_last = true;
 
 		if ( $disable_first )

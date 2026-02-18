@@ -68,6 +68,8 @@ class Responsive_Lightbox_Folders {
 		add_action( 'wp_ajax_rl-folders-add-term', [ $this, 'add_term' ] );
 		add_action( 'wp_ajax_rl-folders-move-term', [ $this, 'move_term' ] );
 		add_action( 'wp_ajax_rl-folders-move-attachments', [ $this, 'move_attachments' ] );
+		add_action( 'wp_ajax_rl-folders-get-counters', [ $this, 'get_counters' ] );
+		add_action( 'wp_ajax_rl-folders-select-term', [ $this, 'select_term' ] );
 
 		// filters
 		add_filter( 'admin_body_class', [ $this, 'admin_body_class' ] );
@@ -375,6 +377,9 @@ class Responsive_Lightbox_Folders {
 		if ( $pagenow === 'upload.php' ) {
 			// append class
 			$classes .= ' rl-folders-upload-' . $this->mode . '-mode';
+
+			// pending state until jsTree hydrates the server-rendered shell
+			$classes .= ' rl-folders-root-pending';
 		}
 
 		return $classes;
@@ -563,7 +568,23 @@ class Responsive_Lightbox_Folders {
 		// get active taxonomy
 		$taxonomy = $this->get_active_taxonomy();
 
-		if ( $pagenow === 'upload.php' && isset( $_GET[$taxonomy] ) ) {
+		if ( $pagenow === 'upload.php' ) {
+			// explicit URL filter has priority; fall back to stored user preference
+			if ( isset( $_GET[$taxonomy] ) ) {
+				$term_id = (int) $_GET[$taxonomy];
+			} else {
+				$stored = get_user_option( 'rl_folders_selected_term' );
+
+				if ( $stored === false || $stored === '' || $stored === 'all' )
+					return $query;
+
+				$term_id = (int) $stored;
+
+				// JS stores root folder as '0'; parse_query uses -1
+				if ( $term_id === 0 )
+					$term_id = -1;
+			}
+
 			// get tax query
 			$tax_query = $query->get( 'tax_query' );
 
@@ -571,7 +592,6 @@ class Responsive_Lightbox_Folders {
 				$tax_query = [];
 
 			// -1 === root, 0 === all files, >0 === term_id
-			$term_id = (int) $_GET[$taxonomy];
 
 			if ( $term_id !== 0 && ( $query->is_main_query() || empty( $query->query['rl_folders_root'] ) ) ) {
 				$tax = [
@@ -611,6 +631,7 @@ class Responsive_Lightbox_Folders {
 		// get active taxonomy
 		$taxonomy = $this->get_active_taxonomy();
 
+		// explicit filter in POST has priority; fall back to stored user preference
 		if ( isset( $_POST['query'][$taxonomy] ) ) {
 			$term_id = sanitize_key( $_POST['query'][$taxonomy] );
 
@@ -621,21 +642,32 @@ class Responsive_Lightbox_Folders {
 
 			if ( $term_id < 0 )
 				return $query;
+		} else {
+			// no filter sent -- apply stored user preference for the initial grid query
+			$stored = get_user_option( 'rl_folders_selected_term' );
 
-			if ( empty( $query['tax_query'] ) || ! is_array( $query['tax_query'] ) )
-				$query['tax_query'] = [];
+			if ( $stored === false || $stored === '' || $stored === 'all' )
+				return $query;
 
-			$query['tax_query'][] = [
-				'relation' => 'AND',
-				[
-					'taxonomy'			=> $taxonomy,
-					'field'				=> 'id',
-					'terms'				=> $term_id,
-					'include_children'	=> ( ! ( isset( $_POST['query']['include_children'] ) && $_POST['query']['include_children'] === 'false' ) ),
-					'operator'		 	=> ( $term_id === 0 ? 'NOT EXISTS' : 'IN' )
-				]
-			];
+			$term_id = (int) $stored;
+
+			if ( $term_id < 0 )
+				return $query;
 		}
+
+		if ( empty( $query['tax_query'] ) || ! is_array( $query['tax_query'] ) )
+			$query['tax_query'] = [];
+
+		$query['tax_query'][] = [
+			'relation' => 'AND',
+			[
+				'taxonomy'			=> $taxonomy,
+				'field'				=> 'id',
+				'terms'				=> $term_id,
+				'include_children'	=> ( ! ( isset( $_POST['query']['include_children'] ) && $_POST['query']['include_children'] === 'false' ) ),
+				'operator'		 	=> ( $term_id === 0 ? 'NOT EXISTS' : 'IN' )
+			]
+		];
 
 		return $query;
 	}
@@ -821,6 +853,11 @@ class Responsive_Lightbox_Folders {
 	 * @return void
 	 */
 	public function delete_term() {
+		// check rate limiting (30 requests per minute for destructive operations)
+		if ( ! Responsive_Lightbox()->check_rate_limit( 'rl_delete_term', 30, 60 ) ) {
+			wp_send_json_error( __( 'Rate limit exceeded. Please try again later.', 'responsive-lightbox' ) );
+		}
+
 		// no data?
 		if ( ! isset( $_POST['term_id'], $_POST['nonce'], $_POST['children'] ) )
 			wp_send_json_error();
@@ -1097,6 +1134,143 @@ class Responsive_Lightbox_Folders {
 	}
 
 	/**
+	 * AJAX action to get fresh tree counters.
+	 *
+	 * @return void
+	 */
+	public function get_counters() {
+		global $wpdb;
+
+		// invalid capability?
+		if ( ! current_user_can( 'upload_files' ) )
+			wp_send_json_error();
+
+		// invalid nonce?
+		if ( ! isset( $_POST['nonce'] ) || ! ctype_alnum( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'rl-folders-ajax-library-nonce' ) )
+			wp_send_json_error();
+
+		// get active taxonomy
+		$taxonomy = $this->get_active_taxonomy();
+
+		// taxonomy does not exist?
+		if ( ! taxonomy_exists( $taxonomy ) )
+			wp_send_json_error();
+
+		$counter_statuses = apply_filters( 'rl_folders_counter_post_statuses', [ 'inherit' ], $taxonomy );
+		$counter_statuses = array_values(
+			array_filter(
+				array_map( 'sanitize_key', (array) $counter_statuses ),
+				static function( $status ) {
+					return $status !== '';
+				}
+			)
+		);
+
+		if ( empty( $counter_statuses ) )
+			$counter_statuses = [ 'inherit' ];
+
+		$counters = [
+			'all' => (int) apply_filters( 'rl_count_attachments', 0 ),
+			'0' => 0
+		];
+
+		$term_ids = get_terms(
+			[
+				'taxonomy' => $taxonomy,
+				'hide_empty' => false,
+				'fields' => 'ids'
+			]
+		);
+
+		if ( ! is_wp_error( $term_ids ) && ! empty( $term_ids ) ) {
+			foreach ( $term_ids as $term_id ) {
+				$counters[(string) (int) $term_id] = 0;
+			}
+		}
+
+		$status_placeholders = implode( ', ', array_fill( 0, count( $counter_statuses ), '%s' ) );
+		$query_values = $counter_statuses;
+		$query_values[] = $taxonomy;
+
+		$term_counts = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT tt.term_id AS term_id, COUNT(DISTINCT p.ID) AS term_count
+				FROM {$wpdb->posts} p
+				INNER JOIN {$wpdb->term_relationships} tr ON tr.object_id = p.ID
+				INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id
+				WHERE p.post_type = 'attachment'
+					AND p.post_status IN (" . $status_placeholders . ")
+					AND tt.taxonomy = %s
+				GROUP BY tt.term_id",
+				$query_values
+			),
+			ARRAY_A
+		);
+
+		if ( ! empty( $term_counts ) ) {
+			foreach ( $term_counts as $term_count ) {
+				$term_id = isset( $term_count['term_id'] ) ? (int) $term_count['term_id'] : 0;
+
+				if ( $term_id > 0 )
+					$counters[(string) $term_id] = isset( $term_count['term_count'] ) ? (int) $term_count['term_count'] : 0;
+			}
+		}
+
+		// root folder query (attachments without any folder term assigned)
+		$root_query = new WP_Query(
+			apply_filters(
+				'rl_root_folder_query_args',
+				[
+					'rl_folders_root' => true,
+					'posts_per_page' => 1,
+					'post_type' => 'attachment',
+					'post_status' => $counter_statuses,
+					'fields' => 'ids',
+					'no_found_rows' => false,
+					'tax_query' => [
+						[
+							'relation' => 'AND',
+							[
+								'taxonomy' => $taxonomy,
+								'field' => 'id',
+								'terms' => 0,
+								'include_children' => false,
+								'operator' => 'NOT EXISTS'
+							]
+						]
+					]
+				]
+			)
+		);
+
+		$counters['0'] = (int) $root_query->found_posts;
+
+		wp_send_json_success(
+			[
+				'counters' => $counters
+			]
+		);
+	}
+
+	/**
+	 * Persist selected folder term as user option via AJAX.
+	 *
+	 * @return void
+	 */
+	public function select_term() {
+		check_ajax_referer( 'rl-folders-ajax-library-nonce', 'nonce' );
+
+		if ( ! current_user_can( 'upload_files' ) )
+			wp_send_json_error( 'No permission.' );
+
+		$term_id = isset( $_POST['term_id'] ) ? sanitize_key( $_POST['term_id'] ) : 'all';
+
+		update_user_option( get_current_user_id(), 'rl_folders_selected_term', $term_id );
+
+		wp_send_json_success();
+	}
+
+	/**
 	 * Change wp_list_categories HTML link.
 	 *
 	 * @param array $matches Matched elements
@@ -1221,7 +1395,9 @@ class Responsive_Lightbox_Folders {
 		// create folder counters
 		$counters = [];
 
-		if ( $page !== 'media' ) {
+		// Only load full tree/jsTree for upload.php (not media-new.php or media modal)
+		// media-new.php needs only the upload destination dropdown functionality
+		if ( $page === 'upload.php' ) {
 			// prepare variables
 			$no_items = '';
 			$childless = false;
@@ -1287,8 +1463,21 @@ class Responsive_Lightbox_Folders {
 				'echo'					=> false
 			];
 
-			// get current term id
-			$term_id = isset( $_GET[$taxonomy->name] ) ? (int) $_GET[$taxonomy->name] : 0;
+			// get current term id: explicit URL filter > stored user preference > default (all)
+			if ( isset( $_GET[$taxonomy->name] ) ) {
+				$term_id = (int) $_GET[$taxonomy->name];
+			} else {
+				$stored_term = get_user_option( 'rl_folders_selected_term' );
+
+				if ( $stored_term !== false && $stored_term !== '' && $stored_term !== 'all' ) {
+					$term_id = (int) $stored_term;
+
+					// JS stores root folder as '0'; PHP tree uses -1
+					if ( $term_id === 0 )
+						$term_id = -1;
+				} else
+					$term_id = 0;
+			}
 
 			// list mode?
 			if ( $this->mode === 'list' ) {
@@ -1413,6 +1602,13 @@ class Responsive_Lightbox_Folders {
 
 		wp_enqueue_script( 'responsive-lightbox-folders-admin', RESPONSIVE_LIGHTBOX_URL . '/js/admin-folders.js', $dependencies, $rl->defaults['version'], false );
 
+		$is_upload_screen = ( $page === 'upload.php' );
+		$sidebar_width_default = 272;
+		$sidebar_width_min = 220;
+		$sidebar_width_max = 420;
+		$sidebar_width_collapsed = 0;
+
+		// Minimal script data for media modal
 		if ( $page === 'media' ) {
 			// prepare script data
 			$script_data = [
@@ -1435,6 +1631,29 @@ class Responsive_Lightbox_Folders {
 					]
 				)
 			];
+		} elseif ( $page === 'media-new.php' ) {
+			// Minimal script data for media-new.php - only needs upload destination sync
+			// No tree/jsTree needed, just page flag for JS to skip initialization
+			$script_data = [
+				'taxonomy'	=> $taxonomy->name,
+				'page'		=> $page,
+				'root'		=> esc_html__( 'Root Folder', 'responsive-lightbox' ),
+				'terms'		=> wp_dropdown_categories(
+					[
+						'orderby'			=> 'name',
+						'order'				=> 'asc',
+						'show_option_all'	=> esc_html__( 'All Files', 'responsive-lightbox' ),
+						'show_count'		=> false,
+						'hide_empty'		=> false,
+						'hierarchical'		=> true,
+						'selected'			=> 0,
+						'name'				=> $taxonomy->name,
+						'taxonomy'			=> $taxonomy->name,
+						'hide_if_empty'		=> true,
+						'echo'				=> false
+					]
+				)
+			];
 		} else {
 			// prepare script data
 			$script_data = [
@@ -1445,6 +1664,7 @@ class Responsive_Lightbox_Folders {
 				'no_media_items'	=> $no_items,
 				'taxonomy'			=> $taxonomy->name,
 				'page'				=> $page,
+				'mode'				=> $this->mode,
 				'root'				=> esc_html__( 'Root Folder', 'responsive-lightbox' ),
 				'all_terms'			=> esc_html__( 'All Files', 'responsive-lightbox' ),
 				'new_folder'		=> esc_html__( 'New Folder', 'responsive-lightbox' ),
@@ -1470,7 +1690,7 @@ class Responsive_Lightbox_Folders {
 					<div id="rl-folders-tree-container">
 						<div class="media-toolbar wp-filter">
 							<div class="view-switch rl-folders-action-links">
-								<a href="#" title="' . esc_attr( $taxonomy->labels->add_new_item ) . '" class="dashicons dashicons-plus rl-folders-add-new-folder' . ( $this->mode === 'list' && ( $term_id === -1 || $term_id > 0 ) ? '' : ' disabled-link' ) . '"></a>
+								<a href="#" title="' . esc_attr( $taxonomy->labels->add_new_item ) . '" class="dashicons dashicons-plus rl-folders-add-new-folder"></a>
 								<a href="#" title="' . esc_attr( sprintf( __( 'Save new %s', 'responsive-lightbox' ), $taxonomy->labels->singular_name ) ) . '" class="dashicons dashicons-yes rl-folders-save-new-folder" style="display: none;"></a>
 								<a href="#" title="' . esc_attr( sprintf( __( 'Cancel adding new %s', 'responsive-lightbox' ), $taxonomy->labels->singular_name ) ) . '" class="dashicons dashicons-no rl-folders-cancel-new-folder" style="display: none;"></a>
 								<a href="#" title="' . esc_attr( $taxonomy->labels->edit_item ) . '" class="dashicons dashicons-edit rl-folders-rename-folder' . ( $this->mode === 'list' && $term_id > 0 ? '' : ' disabled-link' ) . '"></a>
@@ -1484,6 +1704,43 @@ class Responsive_Lightbox_Folders {
 						<div id="rl-folders-tree">' . wp_kses_post( $html ) . '</div>
 					</div>'
 			];
+		}
+
+		if ( $is_upload_screen && isset( $script_data['template'] ) ) {
+			$script_data['template'] = '
+				<div id="rl-folders-tree-root">
+					<div id="rl-folders-tree-shell" class="rl-folders-tree-shell">
+						<div class="rl-folders-tree-header">
+							<span class="rl-folders-tree-title">' . esc_html__( 'Media Folders', 'responsive-lightbox' ) . '</span>
+							<button type="button" class="button button-secondary rl-folders-header-add-new-folder">' . esc_html__( 'New Folder', 'responsive-lightbox' ) . '</button>
+						</div>
+						<div class="rl-folders-tree-viewport">
+							<div class="rl-folders-tree-viewport-inner">' . $script_data['template'] . '</div>
+							<span class="rl-folders-tree-cover" aria-hidden="true"></span>
+						</div>
+					</div>
+					<div class="rl-folders-sidebar-separator" role="separator" aria-label="' . esc_attr__( 'Resize folders sidebar', 'responsive-lightbox' ) . '" aria-orientation="vertical" tabindex="0" aria-valuemin="' . esc_attr( $sidebar_width_min ) . '" aria-valuemax="' . esc_attr( $sidebar_width_max ) . '" aria-valuenow="' . esc_attr( $sidebar_width_default ) . '">
+						<button type="button" class="button-link rl-folders-sidebar-toggle" aria-expanded="true" aria-controls="rl-folders-tree-shell" title="' . esc_attr__( 'Toggle folders sidebar', 'responsive-lightbox' ) . '">
+							<span class="dashicons dashicons-menu-alt2" aria-hidden="true"></span>
+							<span class="screen-reader-text">' . esc_html__( 'Toggle folders sidebar', 'responsive-lightbox' ) . '</span>
+						</button>
+					</div>
+				</div>';
+		}
+
+		$script_data['sidebar_width_default'] = $sidebar_width_default;
+		$script_data['sidebar_width_min'] = $sidebar_width_min;
+		$script_data['sidebar_width_max'] = $sidebar_width_max;
+		$script_data['sidebar_width_collapsed'] = $sidebar_width_collapsed;
+
+		// pass resolved selected term to JS (uses $term_id already resolved from URL > stored > default)
+		if ( $is_upload_screen ) {
+			if ( $term_id === 0 )
+				$script_data['selected_term'] = 'all';
+			elseif ( $term_id === -1 )
+				$script_data['selected_term'] = '0';
+			else
+				$script_data['selected_term'] = (string) $term_id;
 		}
 
 		wp_add_inline_script( 'responsive-lightbox-folders-admin', 'var rlFoldersArgs = ' . wp_json_encode( $script_data ) . ";\n", 'before' );

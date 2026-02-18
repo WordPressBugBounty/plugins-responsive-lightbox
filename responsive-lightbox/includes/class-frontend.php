@@ -279,12 +279,12 @@ class Responsive_Lightbox_Frontend {
 			if ( preg_match( '/<a[^>]*?\bdata-rel=(["\'])(.*?)\1[^>]*?>/is', $link, $result ) === 1 ) {
 				// allow to modify link?
 				if ( $result[2] !== 'norl' ) {
-					// gallery?
+				// gallery?
 					if ( $args['settings']['plugin']['images_as_gallery'] || $args['settings']['plugin']['force_custom_gallery'] )
-						$link = preg_replace( '/\bdata-rel=(["\'])(.*?)\1/s', 'data-rel="' . esc_attr( $args['selector'] ) . '-gallery-' . esc_attr( base64_encode( $result[2] ) ) . '" data-rl_title="__RL_IMAGE_TITLE__" data-rl_caption="__RL_IMAGE_CAPTION__"' . ( $args['script'] === 'magnific' ? ' data-magnific_type="gallery"' : '' ) . ( $args['script'] === 'imagelightbox' ? ' data-imagelightbox="' . (int) $args['link_number'] . '"' : '' ), $link, 1 );
+						$link = preg_replace( '/\bdata-rel=(["\'])(.*?)\1/s', 'data-rel="' . esc_attr( $args['selector'] ) . '-gallery-' . esc_attr( base64_encode( sanitize_text_field( $result[2] ) ) ) . '" data-rl_title="__RL_IMAGE_TITLE__" data-rl_caption="__RL_IMAGE_CAPTION__"' . ( $args['script'] === 'magnific' ? ' data-magnific_type="gallery"' : '' ) . ( $args['script'] === 'imagelightbox' ? ' data-imagelightbox="' . (int) $args['link_number'] . '"' : '' ), $link, 1 );
 					// single image
 					else
-						$link = preg_replace( '/\bdata-rel=(["\'])(.*?)\1/s', 'data-rel="' . esc_attr( $args['selector'] ) . '-image-' . esc_attr( base64_encode( $result[2] ) ) . '"' . ( $args['script'] === 'magnific' ? ' data-magnific_type="image"' : '' ) . ( $args['script'] === 'imagelightbox' ? ' data-imagelightbox="' . (int) $args['link_number'] . '"' : '' ) . ' data-rl_title="__RL_IMAGE_TITLE__" data-rl_caption="__RL_IMAGE_CAPTION__"', $link, 1 );
+						$link = preg_replace( '/\bdata-rel=(["\'])(.*?)\1/s', 'data-rel="' . esc_attr( $args['selector'] ) . '-image-' . esc_attr( base64_encode( sanitize_text_field( $result[2] ) ) ) . '"' . ( $args['script'] === 'magnific' ? ' data-magnific_type="image"' : '' ) . ( $args['script'] === 'imagelightbox' ? ' data-imagelightbox="' . (int) $args['link_number'] . '"' : '' ) . ' data-rl_title="__RL_IMAGE_TITLE__" data-rl_caption="__RL_IMAGE_CAPTION__"', $link, 1 );
 				}
 			// link without data-rel
 			} else {
@@ -1078,13 +1078,13 @@ class Responsive_Lightbox_Frontend {
 						if ( $result[2] === 'norl' )
 							continue;
 
-						$content = str_replace( $link, preg_replace( '/\bdata-rel=(["\'])(.*?)\1/', 'data-rel="' . esc_attr( $rl->options['settings']['selector'] ) . '-gallery-' . esc_attr( base64_encode( $result[2] ) ) . '" data-rl_title="' . esc_attr( $title ) . '" data-rl_caption="' . esc_attr( $caption ) . '"' . ( $script === 'imagelightbox' ? ' data-imagelightbox="' . (int) $link_number . '"' : '' ), $link, 1 ), $content );
+						$content = str_replace( $link, preg_replace( '/\bdata-rel=(["\'])(.*?)\1/', 'data-rel="' . esc_attr( $rl->options['settings']['selector'] ) . '-gallery-' . esc_attr( base64_encode( sanitize_text_field( $result[2] ) ) ) . '" data-rl_title="' . esc_attr( $title ) . '" data-rl_caption="' . esc_attr( $caption ) . '"' . ( $script === 'imagelightbox' ? ' data-imagelightbox="' . (int) $link_number . '"' : '' ), $link, 1 ), $content );
 					} elseif ( preg_match( '/<a[^>]*?\brel=(["\'])(.*?)\1[^>]*?>/i', $link, $result ) === 1 ) {
 						// do not modify this link
 						if ( $result[2] === 'norl' )
 							continue;
 
-						$content = str_replace( $link, preg_replace( '/\brel=(["\'])(.*?)\1/', 'data-rel="' . esc_attr( $rl->options['settings']['selector'] ) . '-gallery-' . esc_attr( base64_encode( $result[2] ) ) . '" data-rl_title="' . esc_attr( $title ) . '" data-rl_caption="' . esc_attr( $caption ) . '"' . ( $script === 'imagelightbox' ? ' data-imagelightbox="' . (int) $link_number . '"' : '' ), $link, 1 ), $content );
+						$content = str_replace( $link, preg_replace( '/\brel=(["\'])(.*?)\1/', 'data-rel="' . esc_attr( $rl->options['settings']['selector'] ) . '-gallery-' . esc_attr( base64_encode( sanitize_text_field( $result[2] ) ) ) . '" data-rl_title="' . esc_attr( $title ) . '" data-rl_caption="' . esc_attr( $caption ) . '"' . ( $script === 'imagelightbox' ? ' data-imagelightbox="' . (int) $link_number . '"' : '' ), $link, 1 ), $content );
 					} else
 						$content = str_replace( $link, '<a' . $links[1][$link_number] . ' href="' . $links[3][$link_number] . '.' . $links[4][$link_number] . '" data-rel="' . esc_attr( $rl->options['settings']['selector'] ) . '-gallery-' . esc_attr( base64_encode( $this->gallery_no ) ) . '" data-rl_title="' . esc_attr( $title ) . '" data-rl_caption="' . esc_attr( $caption ) . '"' . ( $script === 'imagelightbox' ? ' data-imagelightbox="' . (int) $link_number . '"' : '' ) . $links[5][$link_number] . '>', $content );
 				}
@@ -1763,7 +1763,7 @@ class Responsive_Lightbox_Frontend {
 	 * @return string
 	 */
 	public function widget_output( $content, $widget_id_base, $widget_id ) {
-		return $this->add_lightbox( $content );
+		return wp_kses( $this->add_lightbox( $content ), $this->get_comment_lightbox_allowed_html() );
 	}
 
 	/**
@@ -2043,8 +2043,8 @@ class Responsive_Lightbox_Frontend {
 			<div class="rl-gallery rl-basicgrid-gallery <?php echo esc_attr( $atts['class'] ); ?>" id="rl-gallery-<?php echo (int) $gallery_no; ?>" data-gallery_no="<?php echo (int) $gallery_no; ?>">
 
 			<?php foreach ( $images as $image ) {
-				// $image['link'] is already escaped
-				echo '<div class="rl-gallery-item">' . $image['link'] . '</div>';
+				// $image['link'] is already escaped via get_gallery_image_link(), but we apply wp_kses_post() for defense-in-depth
+				echo '<div class="rl-gallery-item">' . wp_kses_post( $image['link'] ) . '</div>';
 			} ?>
 
 			</div>
@@ -2260,7 +2260,7 @@ class Responsive_Lightbox_Frontend {
 				<?php foreach ( $images as $image ) {
 					echo '
 					<li class="rl-gallery-item splide__slide" ' . implode( ' ', apply_filters( 'rl_gallery_item_extra_args', [], $atts, $image ) ) . ' data-thumb="' . $image['thumbnail_url'] . '">
-						' . $image['link'] . '
+						' . wp_kses_post( $image['link'] ) . '
 					</li>';
 				} ?>
 
@@ -2487,11 +2487,11 @@ class Responsive_Lightbox_Frontend {
 				echo '<div class="rl-gutter-sizer"></div><div class="rl-grid-sizer"></div>';
 
 			foreach ( $images as $image ) {
-				// $image['link'] is already escaped
+				// $image['link'] is already escaped via get_gallery_image_link(), but we apply wp_kses_post() for defense-in-depth
 				echo '
 				<div class="rl-gallery-item' . ( $count === 0 ? ' rl-gallery-item-width-4' : '' ) . '" ' . implode( ' ', apply_filters( 'rl_gallery_item_extra_args', [], $atts, $image ) ) . '>
 					<div class="rl-gallery-item-content">
-						' . $image['link'] . '
+						' . wp_kses_post( $image['link'] ) . '
 					</div>
 				</div>';
 
