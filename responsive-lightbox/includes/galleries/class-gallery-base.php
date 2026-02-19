@@ -583,6 +583,7 @@ abstract class Responsive_Lightbox_Gallery_Base extends Responsive_Lightbox_Sett
 
 		$galleries = $rl->galleries;
 		$data = get_post_meta( $post_id, '_rl_images', true );
+		$data = is_array( $data ) ? $data : [];
 
 		// load images only when saved menu_item is 'media' or we're not doing an AJAX menu switch
 		if ( ( ! empty( $data['menu_item'] ) && $data['menu_item'] === 'media' ) || ! ( wp_doing_ajax() && isset( $_POST['action'] ) && $_POST['action'] === 'rl-get-menu-content' ) )

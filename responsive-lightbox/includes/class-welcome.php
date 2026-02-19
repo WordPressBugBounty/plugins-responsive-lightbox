@@ -52,7 +52,9 @@ class Responsive_Lightbox_Welcome_Page {
 	 */
 	private function intro() {
 		// get plugin version
-		$plugin_version = substr( get_option( 'responsive_lightbox_version' ), 0, 3 );
+		$plugin_version = get_option( 'responsive_lightbox_version' );
+		$plugin_version = is_string( $plugin_version ) ? $plugin_version : (string) Responsive_Lightbox()->defaults['version'];
+		$plugin_version = substr( $plugin_version, 0, 3 );
 		?>
 		<h2 style="text-align: left; font-size: 29px; padding-bottom: 0;"><?php esc_html_e( 'Welcome to', 'responsive-lightbox' ); ?></h2>
 		<h1 style="margin-top: 0;"><?php printf( esc_html__( 'Responsive Lightbox & Gallery %s', 'responsive-lightbox' ), $plugin_version ); ?></h1>

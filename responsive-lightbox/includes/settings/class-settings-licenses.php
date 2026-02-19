@@ -109,6 +109,7 @@ class Responsive_Lightbox_Settings_Licenses extends Responsive_Lightbox_Settings
 		$extension_name = ! empty( $extension['name'] ) ? $extension['name'] : '';
 
 		$licenses = get_option( 'responsive_lightbox_licenses' );
+		$licenses = is_array( $licenses ) ? $licenses : [];
 
 		if ( ! empty( $licenses ) && ! empty( $extension_id ) ) {
 			$license = isset( $licenses[$extension_id]['license'] ) ? $licenses[$extension_id]['license'] : '';
@@ -171,6 +172,7 @@ class Responsive_Lightbox_Settings_Licenses extends Responsive_Lightbox_Settings
 		// save settings
 		if ( isset( $_POST['save_responsive_lightbox_licenses'] ) || isset( $_POST['save_rl_licenses'] ) ) {
 			$licenses = get_option( 'responsive_lightbox_licenses' );
+			$licenses = is_array( $licenses ) ? $licenses : [];
 			$statuses = [ 'updated' => 0, 'error' => 0 ];
 
 			foreach ( $extensions as $extension ) {
@@ -223,6 +225,7 @@ class Responsive_Lightbox_Settings_Licenses extends Responsive_Lightbox_Settings
 				add_settings_error( 'rl_licenses_settings', 'license_activation_failed', esc_html( sprintf( _n( '%s license activation failed.', '%s licenses activation failed.', (int) $statuses['error'], 'responsive-lightbox' ), (int) $statuses['error'] ) ), 'error' );
 		} elseif ( isset( $_POST['reset_responsive_lightbox_licenses'] ) || isset( $_POST['reset_rl_licenses'] ) ) {
 			$licenses = get_option( 'responsive_lightbox_licenses' );
+			$licenses = is_array( $licenses ) ? $licenses : [];
 			$statuses = [
 				'updated'	=> 0,
 				'error'		=> 0

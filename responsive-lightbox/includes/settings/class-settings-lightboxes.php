@@ -30,6 +30,8 @@ class Responsive_Lightbox_Settings_Lightboxes extends Responsive_Lightbox_Settin
 	 */
 	public function validate( $input ) {
 		$rl = Responsive_Lightbox();
+		$input = is_array( $input ) ? $input : [];
+		$current_configuration = isset( $rl->options['configuration'] ) && is_array( $rl->options['configuration'] ) ? $rl->options['configuration'] : [];
 
 		// check if this is a reset operation
 		if ( $this->is_reset_request() ) {
@@ -52,7 +54,7 @@ class Responsive_Lightbox_Settings_Lightboxes extends Responsive_Lightbox_Settin
 				if ( is_array( $defaults ) ) {
 					$input[$script] = $defaults;
 					// merge with saved config to preserve other scripts
-					$input = array_merge( $rl->options['configuration'], $input );
+					$input = array_merge( $current_configuration, $input );
 					add_settings_error( 'reset_rl_configuration', 'settings_restored', esc_html__( 'Settings restored to defaults.', 'responsive-lightbox' ), 'updated' );
 				}
 			}
@@ -82,7 +84,7 @@ class Responsive_Lightbox_Settings_Lightboxes extends Responsive_Lightbox_Settin
 		}
 
 		// merge with saved configuration to preserve other lightbox scripts
-		$input = array_merge( $rl->options['configuration'], $input );
+		$input = array_merge( $current_configuration, $input );
 
 		return $input;
 	}

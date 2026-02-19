@@ -280,6 +280,7 @@ class Responsive_Lightbox_Settings_Folders extends Responsive_Lightbox_Settings_
 		
 		// save discovered taxonomies to options (merge with existing, preserve on scan failure)
 		$options = get_option( 'responsive_lightbox_folders', [] );
+		$options = is_array( $options ) ? $options : [];
 		$existing = isset( $options['custom_taxonomies'] ) && is_array( $options['custom_taxonomies'] ) ? $options['custom_taxonomies'] : [];
 		
 		if ( ! empty( $fields ) ) {

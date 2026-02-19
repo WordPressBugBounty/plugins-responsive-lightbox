@@ -486,8 +486,9 @@ if ( ! isset( $gallery_fields ) && ! empty( $gallery_type ) )
 
 		// get design data
 		$design = get_post_meta( $args['id'], '_rl_design', true );
+		$design = is_array( $design ) ? $design : [];
 
-		if ( ! empty( $design['menu_item'] ) ) {
+		if ( ! empty( $design['menu_item'] ) && isset( $design[$design['menu_item']] ) && is_array( $design[$design['menu_item']] ) ) {
 			$design_data = $design[$design['menu_item']];
 
 			// remove show_title to avoid shortcode attribute duplication
@@ -513,8 +514,9 @@ if ( ! isset( $gallery_fields ) && ! empty( $gallery_type ) )
 
 		// get lightbox data
 		$lightbox = get_post_meta( $args['id'], '_rl_lightbox', true );
+		$lightbox = is_array( $lightbox ) ? $lightbox : [];
 
-		if ( ! empty( $lightbox['menu_item'] ) ) {
+		if ( ! empty( $lightbox['menu_item'] ) && isset( $lightbox[$lightbox['menu_item']] ) && is_array( $lightbox[$lightbox['menu_item']] ) ) {
 			foreach ( $lightbox[$lightbox['menu_item']] as $arg => $value ) {
 				$shortcode .= ' ' . esc_attr( $arg ) . '="' . esc_attr( (string) $value ) . '"';
 			}
@@ -1696,7 +1698,7 @@ if ( ! isset( $gallery_fields ) && ! empty( $gallery_type ) )
 			case 'type':
 				$config = get_post_meta( $post_id, '_rl_config', true );
 
-				if ( ! empty( $config['menu_item'] ) && array_key_exists( $config['menu_item'], $this->tabs['config']['menu_items'] ) ) {
+				if ( is_array( $config ) && ! empty( $config['menu_item'] ) && array_key_exists( $config['menu_item'], $this->tabs['config']['menu_items'] ) ) {
 					echo esc_html( $this->tabs['config']['menu_items'][$config['menu_item']] );
 
 					if ( $config['menu_item'] === 'default' )
@@ -1708,7 +1710,7 @@ if ( ! isset( $gallery_fields ) && ! empty( $gallery_type ) )
 			case 'source':
 				$images = get_post_meta( $post_id, '_rl_images', true );
 
-				if ( ! empty( $images['menu_item'] ) && array_key_exists( $images['menu_item'], $this->tabs['images']['menu_items'] ) )
+				if ( is_array( $images ) && ! empty( $images['menu_item'] ) && array_key_exists( $images['menu_item'], $this->tabs['images']['menu_items'] ) )
 					echo esc_html( $this->tabs['images']['menu_items'][$images['menu_item']] );
 				else
 					echo '-';

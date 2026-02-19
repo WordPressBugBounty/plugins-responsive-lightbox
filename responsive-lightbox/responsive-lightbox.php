@@ -2,7 +2,7 @@
 /*
 Plugin Name: Responsive Lightbox & Gallery
 Description: Responsive Lightbox & Gallery allows users to create galleries and view larger versions of images, galleries and videos in a lightbox (overlay) effect optimized for mobile devices.
-Version: 2.7.2
+Version: 2.7.3
 Author: dFactory
 Author URI: http://www.dfactory.co/
 Plugin URI: http://www.dfactory.co/products/responsive-lightbox/
@@ -45,7 +45,7 @@ include_once( RESPONSIVE_LIGHTBOX_PATH . 'includes' . DIRECTORY_SEPARATOR . 'fun
  * Responsive Lightbox class.
  *
  * @class Responsive_Lightbox
- * @version	2.7.2
+ * @version	2.7.3
  */
 class Responsive_Lightbox {
 
@@ -284,7 +284,7 @@ class Responsive_Lightbox {
 			'origin_left'		=> true,
 			'origin_top'		=> true
 		],
-		'version' => '2.7.2',
+		'version' => '2.7.3',
 		'activation_date' => ''
 	];
 	public $options = [];
@@ -355,11 +355,12 @@ class Responsive_Lightbox {
 		if ( empty( $capabilities ) )
 			$capabilities = [];
 
-		$this->options['settings'] = array_merge( $this->defaults['settings'], ( ( $array = get_option( 'responsive_lightbox_settings' ) ) === false ? [] : $array ) );
+		$array = get_option( 'responsive_lightbox_settings' );
+		$this->options['settings'] = array_merge( $this->defaults['settings'], is_array( $array ) ? $array : [] );
 		
 		// load folders options with migration check
 		$raw_folders = get_option( 'responsive_lightbox_folders', false );
-		$raw_folders = $raw_folders === false ? [] : $raw_folders;
+		$raw_folders = is_array( $raw_folders ) ? $raw_folders : [];
 		$this->options['folders'] = array_merge( $this->defaults['folders'], $raw_folders );
 		
 		// migrate existing users: detect if they're using custom taxonomy
@@ -368,21 +369,28 @@ class Responsive_Lightbox {
 			update_option( 'responsive_lightbox_folders', $this->options['folders'] );
 		}
 		
-		$this->options['builder'] = array_merge( $this->defaults['builder'], ( ( $array = get_option( 'responsive_lightbox_builder' ) ) === false ? [] : $array ) );
-		$this->options['capabilities'] = array_merge( $this->defaults['capabilities'], $capabilities );
-		$this->options['remote_library'] = array_merge( $this->defaults['remote_library'], ( ( $array = get_option( 'responsive_lightbox_remote_library' ) ) === false ? [] : $array ) );
+		$array = get_option( 'responsive_lightbox_builder' );
+		$this->options['builder'] = array_merge( $this->defaults['builder'], is_array( $array ) ? $array : [] );
+		$this->options['capabilities'] = array_merge( $this->defaults['capabilities'], is_array( $capabilities ) ? $capabilities : [] );
+		$array = get_option( 'responsive_lightbox_remote_library' );
+		$this->options['remote_library'] = array_merge( $this->defaults['remote_library'], is_array( $array ) ? $array : [] );
 
 		// for multi arrays we have to merge them separately
-		$db_conf_opts = ( ( $base = get_option( 'responsive_lightbox_configuration' ) ) === false ? [] : $base );
+		$base = get_option( 'responsive_lightbox_configuration' );
+		$db_conf_opts = is_array( $base ) ? $base : [];
 
 		foreach ( $this->defaults['configuration'] as $script => $settings ) {
-			$this->options['configuration'][$script] = array_merge( $settings, ( isset( $db_conf_opts[$script] ) ? $db_conf_opts[$script] : [] ) );
+			$script_options = ( isset( $db_conf_opts[$script] ) && is_array( $db_conf_opts[$script] ) ) ? $db_conf_opts[$script] : [];
+			$this->options['configuration'][$script] = array_merge( $settings, $script_options );
 		}
 
 		// add default galleries options
-		$this->options['basicgrid_gallery'] = array_merge( $this->defaults['basicgrid_gallery'], ( ( $array = get_option( 'responsive_lightbox_basicgrid_gallery', $this->defaults['basicgrid_gallery'] ) ) === false ? [] : $array ) );
-		$this->options['basicslider_gallery'] = array_merge( $this->defaults['basicslider_gallery'], ( ( $array = get_option( 'responsive_lightbox_basicslider_gallery', $this->defaults['basicslider_gallery'] ) ) === false ? [] : $array ) );
-		$this->options['basicmasonry_gallery'] = array_merge( $this->defaults['basicmasonry_gallery'], ( ( $array = get_option( 'responsive_lightbox_basicmasonry_gallery', $this->defaults['basicmasonry_gallery'] ) ) === false ? [] : $array ) );
+		$array = get_option( 'responsive_lightbox_basicgrid_gallery', $this->defaults['basicgrid_gallery'] );
+		$this->options['basicgrid_gallery'] = array_merge( $this->defaults['basicgrid_gallery'], is_array( $array ) ? $array : [] );
+		$array = get_option( 'responsive_lightbox_basicslider_gallery', $this->defaults['basicslider_gallery'] );
+		$this->options['basicslider_gallery'] = array_merge( $this->defaults['basicslider_gallery'], is_array( $array ) ? $array : [] );
+		$array = get_option( 'responsive_lightbox_basicmasonry_gallery', $this->defaults['basicmasonry_gallery'] );
+		$this->options['basicmasonry_gallery'] = array_merge( $this->defaults['basicmasonry_gallery'], is_array( $array ) ? $array : [] );
 
 		// set current lightbox script
 		$this->current_script = $this->options['settings']['script'];
@@ -555,7 +563,7 @@ class Responsive_Lightbox {
 	public function deactivate_site( $multi = false ) {
 		if ( $multi === true ) {
 			$options = get_option( 'responsive_lightbox_settings' );
-			$check = $options['deactivation_delete'];
+			$check = is_array( $options ) && ! empty( $options['deactivation_delete'] );
 		} else
 			$check = $this->options['settings']['deactivation_delete'];
 

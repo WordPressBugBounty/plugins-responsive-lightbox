@@ -600,7 +600,7 @@ class Responsive_Lightbox_Frontend {
 					$data = get_post_meta( $shortcode_atts['rl_gallery_id'], '_rl_' . $key, true );
 
 					// add those fields
-					if ( ! empty( $data['menu_item'] ) && is_array( $data[$data['menu_item']] ) ) {
+					if ( is_array( $data ) && ! empty( $data['menu_item'] ) && isset( $data[$data['menu_item']] ) && is_array( $data[$data['menu_item']] ) ) {
 						$new_data = $data[$data['menu_item']];
 
 						if ( $key === 'design' ) {

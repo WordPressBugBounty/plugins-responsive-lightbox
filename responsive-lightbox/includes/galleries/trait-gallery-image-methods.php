@@ -72,19 +72,19 @@ trait Responsive_Lightbox_Galleries_Image_Methods {
 		if ( $valid_gallery_type && ! $args['count_images'] ) {
 			$paging = get_post_meta( $gallery_id, '_rl_paging', true );
 
-			if ( isset( $paging['menu_item'] ) ) {
+			if ( is_array( $paging ) && ! empty( $paging['menu_item'] ) && isset( $paging[$paging['menu_item']] ) && is_array( $paging[$paging['menu_item']] ) ) {
 				$pagination = $paging[$paging['menu_item']];
 
-				if ( $pagination['pagination'] ) {
+				if ( ! empty( $pagination['pagination'] ) ) {
 					$args['nopaging'] = false;
-					$args['images_per_page'] = $pagination['images_per_page'];
-					$args['pagination_type'] = $pagination['pagination_type'];
+					$args['images_per_page'] = isset( $pagination['images_per_page'] ) ? $pagination['images_per_page'] : $args['images_per_page'];
+					$args['pagination_type'] = isset( $pagination['pagination_type'] ) ? $pagination['pagination_type'] : $args['pagination_type'];
 
 					// infinite type?
 					if ( $args['pagination_type'] === 'infinite' )
 						$args['pagination_position'] = 'bottom';
 					else
-						$args['pagination_position'] = $pagination['pagination_position'];
+						$args['pagination_position'] = isset( $pagination['pagination_position'] ) ? $pagination['pagination_position'] : $args['pagination_position'];
 				} else
 					$args['nopaging'] = true;
 			}
@@ -109,11 +109,14 @@ trait Responsive_Lightbox_Galleries_Image_Methods {
 				$config_meta = get_post_meta( $gallery_id, '_rl_config', true );
 
 				// config order
-				if ( isset( $config_meta['menu_item'] ) ) {
+				if ( is_array( $config_meta ) && ! empty( $config_meta['menu_item'] ) && isset( $config_meta[$config_meta['menu_item']] ) && is_array( $config_meta[$config_meta['menu_item']] ) ) {
 					$config = $config_meta[$config_meta['menu_item']];
 
-					$args['orderby'] = $config['orderby'];
-					$args['order'] = $config['order'];
+					if ( isset( $config['orderby'] ) )
+						$args['orderby'] = $config['orderby'];
+
+					if ( isset( $config['order'] ) )
+						$args['order'] = $config['order'];
 				}
 			}
 
@@ -500,7 +503,7 @@ trait Responsive_Lightbox_Galleries_Image_Methods {
 						$lightbox_meta = get_post_meta( $gallery_id, '_rl_lightbox', true );
 
 						// valid data?
-						if ( isset( $lightbox_meta['menu_item'] ) )
+						if ( is_array( $lightbox_meta ) && ! empty( $lightbox_meta['menu_item'] ) && isset( $lightbox_meta[$lightbox_meta['menu_item']] ) && is_array( $lightbox_meta[$lightbox_meta['menu_item']] ) && isset( $lightbox_meta[$lightbox_meta['menu_item']]['lightbox_image_title'] ) )
 							$title_arg = $lightbox_meta[$lightbox_meta['menu_item']]['lightbox_image_title'];
 						else
 							$title_arg = $rl->options['settings']['gallery_image_title'];
