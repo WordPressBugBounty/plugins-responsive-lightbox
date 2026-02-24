@@ -4,7 +4,7 @@ Donate link: http://www.dfactory.co/
 Tags: gallery, galleries, lightbox, image, images
 Requires at least: 6.0
 Tested up to: 6.9.1
-Stable tag: 2.7.3
+Stable tag: 2.7.4
 Requires PHP: 7.0
 License: MIT License
 License URI: http://opensource.org/licenses/MIT
@@ -139,6 +139,11 @@ Responsive Lightbox and Gallery plugin comes with many styles and effects alread
 2. screenshot-2.jpg
 
 == Changelog ==
+
+= 2.7.4 =
+* Fix: Make gallery title sorting independent of lightbox title setting
+* Fix: Guard early user option reads in folders to prevent undefined array key errors
+* Fix: Guard early folder user option reads for better error handling
 
 = 2.7.3 =
 * Fix: Prevent bootstrap fatal on malformed options
@@ -612,5 +617,5 @@ Initial release
 
 == Upgrade Notice ==
 
-= 2.7.3 =
-Prevent bootstrap fatal errors on malformed options and harden option/meta type guards
+= 2.7.4 =
+Important fixes for gallery title sorting and folder option handling to prevent errors

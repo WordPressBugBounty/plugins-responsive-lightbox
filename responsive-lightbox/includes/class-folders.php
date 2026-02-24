@@ -312,6 +312,41 @@ class Responsive_Lightbox_Folders {
 
 
 	/**
+	 * Read user option safely.
+	 *
+	 * `get_user_option()` can call `get_userdata()`. Guard this path because
+	 * some hooks can run before pluggable user functions are loaded.
+	 *
+	 * @param string $option Option key.
+	 * @param mixed $default Default value.
+	 * @return mixed
+	 */
+	private function get_user_option_safe( $option, $default = false ) {
+		if ( ! function_exists( 'get_user_option' ) || ! function_exists( 'get_userdata' ) )
+			return $default;
+
+		$value = get_user_option( $option );
+
+		if ( $value === false )
+			return $default;
+
+		return ( is_scalar( $value ) || $value === null ? $value : $default );
+	}
+
+	/**
+	 * Read stored selected folder term safely.
+	 *
+	 * `get_user_option()` can call `get_userdata()`. Guard this path because
+	 * `parse_query` may run before pluggable user functions are loaded.
+	 *
+	 * @return string|false
+	 */
+	private function get_selected_term_option() {
+		return $this->get_user_option_safe( 'rl_folders_selected_term', false );
+	}
+
+
+	/**
 	 * Detect library mode (list or grid).
 	 *
 	 * @global string $pagenow
@@ -334,7 +369,7 @@ class Responsive_Lightbox_Folders {
 			// check mode
 			if ( ! ( $mode && ctype_lower( $mode ) && in_array( $mode, $modes, true ) ) ) {
 				// get user mode
-				$user_mode = (string) get_user_option( 'media_library_mode' );
+				$user_mode = (string) $this->get_user_option_safe( 'media_library_mode', '' );
 
 				// valid user mode?
 				if ( in_array( $user_mode, $modes, true ) )
@@ -573,7 +608,7 @@ class Responsive_Lightbox_Folders {
 			if ( isset( $_GET[$taxonomy] ) ) {
 				$term_id = (int) $_GET[$taxonomy];
 			} else {
-				$stored = get_user_option( 'rl_folders_selected_term' );
+				$stored = $this->get_selected_term_option();
 
 				if ( $stored === false || $stored === '' || $stored === 'all' )
 					return $query;
@@ -644,7 +679,7 @@ class Responsive_Lightbox_Folders {
 				return $query;
 		} else {
 			// no filter sent -- apply stored user preference for the initial grid query
-			$stored = get_user_option( 'rl_folders_selected_term' );
+			$stored = $this->get_selected_term_option();
 
 			if ( $stored === false || $stored === '' || $stored === 'all' )
 				return $query;
@@ -1415,7 +1450,7 @@ class Responsive_Lightbox_Folders {
 
 			if ( ! empty( $_wp_admin_css_colors ) ) {
 				// get current admin color scheme name
-				$current_color_scheme = get_user_option( 'admin_color' );
+				$current_color_scheme = $this->get_user_option_safe( 'admin_color', '' );
 
 				if ( empty( $current_color_scheme ) )
 					$current_color_scheme = 'fresh';
@@ -1467,7 +1502,7 @@ class Responsive_Lightbox_Folders {
 			if ( isset( $_GET[$taxonomy->name] ) ) {
 				$term_id = (int) $_GET[$taxonomy->name];
 			} else {
-				$stored_term = get_user_option( 'rl_folders_selected_term' );
+				$stored_term = $this->get_selected_term_option();
 
 				if ( $stored_term !== false && $stored_term !== '' && $stored_term !== 'all' ) {
 					$term_id = (int) $stored_term;
