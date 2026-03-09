@@ -4,7 +4,7 @@ Donate link: http://www.dfactory.co/
 Tags: gallery, galleries, lightbox, image, images
 Requires at least: 6.0
 Tested up to: 6.9.1
-Stable tag: 2.7.4
+Stable tag: 2.7.5
 Requires PHP: 7.0
 License: MIT License
 License URI: http://opensource.org/licenses/MIT
@@ -139,6 +139,10 @@ Responsive Lightbox and Gallery plugin comes with many styles and effects alread
 2. screenshot-2.jpg
 
 == Changelog ==
+
+= 2.7.5 =
+* Fix: Restore widget rendering when comments lightbox filtering runs, including Archives dropdown markup
+* Tweak: Preload built-in gallery assets earlier for gallery pages and shortcode requests
 
 = 2.7.4 =
 * Fix: Make gallery title sorting independent of lightbox title setting
@@ -617,5 +621,5 @@ Initial release
 
 == Upgrade Notice ==
 
-= 2.7.4 =
-Important fixes for gallery title sorting and folder option handling to prevent errors
+= 2.7.5 =
+Improves built-in gallery asset loading reliability and restores widget rendering when comments lightbox filtering runs.

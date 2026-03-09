@@ -75,6 +75,23 @@ class Responsive_Lightbox_Frontend {
 	}
 
 	/**
+	 * Determine whether gallery assets should be preloaded for the current request.
+	 *
+	 * @return bool
+	 */
+	private function should_preload_gallery_assets() {
+		global $post;
+
+		if ( ! is_object( $post ) )
+			return false;
+
+		if ( get_post_type( $post ) === 'rl_gallery' && is_singular( 'rl_gallery' ) )
+			return true;
+
+		return has_shortcode( $post->post_content, 'gallery' ) || has_shortcode( $post->post_content, 'rl_gallery' );
+	}
+
+	/**
 	 * Add lightbox to images, galleries and videos.
 	 *
 	 * @param string $content HTML content
@@ -1763,7 +1780,12 @@ class Responsive_Lightbox_Frontend {
 	 * @return string
 	 */
 	public function widget_output( $content, $widget_id_base, $widget_id ) {
-		return wp_kses( $this->add_lightbox( $content ), $this->get_comment_lightbox_allowed_html() );
+		if ( ( is_admin() && ! wp_doing_ajax() ) || Responsive_Lightbox()->options['settings']['widgets'] !== true )
+			return $content;
+
+		// Widgets can contain valid form controls and inline scripts (e.g. core Archives dropdown handlers).
+		// Reuse the pre-2.7.4 behavior and only apply lightbox rewriting.
+		return $this->add_lightbox( $content );
 	}
 
 	/**
@@ -2637,6 +2659,30 @@ class Responsive_Lightbox_Frontend {
 		// load style data?
 		if ( ! empty( $this->style_data['basicmasonry'] ) )
 			wp_add_inline_style( 'responsive-lightbox-basicmasonry-gallery', $this->style_data['basicmasonry'] );
+
+		if ( $this->should_preload_gallery_assets() ) {
+			$styles = apply_filters(
+				'rl_gallery_preload_styles',
+				[
+					'responsive-lightbox-gallery',
+					'responsive-lightbox-basicgrid-gallery',
+					'responsive-lightbox-basicslider-gallery',
+					'responsive-lightbox-basicmasonry-gallery'
+				]
+			);
+
+			foreach ( $styles as $style ) {
+				if ( is_string( $style ) && $style !== '' )
+					wp_enqueue_style( $style );
+			}
+
+			$scripts = apply_filters( 'rl_gallery_preload_scripts', [] );
+
+			foreach ( $scripts as $script ) {
+				if ( is_string( $script ) && $script !== '' )
+					wp_enqueue_script( $script );
+			}
+		}
 	}
 
 	/**
