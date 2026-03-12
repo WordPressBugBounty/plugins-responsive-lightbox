@@ -1635,6 +1635,7 @@ class Responsive_Lightbox_Frontend {
 
 			// gallery style
 			wp_enqueue_style( 'responsive-lightbox-gallery' );
+			wp_enqueue_style( 'responsive-lightbox-gallery-inline' );
 
 			// is there rl_gallery ID?
 			$rl_gallery_id = ! empty( $shortcode_atts['rl_gallery_id'] ) ? (int) $shortcode_atts['rl_gallery_id'] : 0;
@@ -1696,7 +1697,7 @@ class Responsive_Lightbox_Frontend {
 				}';
 
 				// load style data
-				$style_loaded = wp_add_inline_style( 'responsive-lightbox-gallery', $style_data );
+				$style_loaded = wp_add_inline_style( 'responsive-lightbox-gallery-inline', $style_data );
 
 				if ( ! $style_loaded )
 					$this->style_data['gallery'] .= $style_data;
@@ -2081,6 +2082,7 @@ class Responsive_Lightbox_Frontend {
 
 		// styles
 		wp_enqueue_style( 'responsive-lightbox-basicgrid-gallery', plugins_url( 'css/gallery-basicgrid.css', dirname( __FILE__ ) ), [], $rl->defaults['version'] );
+		wp_enqueue_style( 'responsive-lightbox-basicgrid-gallery-inline' );
 		
 		// prepare style data
 		$style_data = '
@@ -2123,7 +2125,7 @@ class Responsive_Lightbox_Frontend {
 		}
 
 		// load style data
-		$style_loaded = wp_add_inline_style( 'responsive-lightbox-basicgrid-gallery', $style_data );
+		$style_loaded = wp_add_inline_style( 'responsive-lightbox-basicgrid-gallery-inline', $style_data );
 		
 		if ( ! $style_loaded )
 			$this->style_data['basicgrid'] .= $style_data;
@@ -2300,6 +2302,7 @@ class Responsive_Lightbox_Frontend {
 		// enqueue scripts and styles
 		wp_enqueue_script( 'responsive-lightbox-basicslider-gallery' );
 		wp_enqueue_style( 'responsive-lightbox-basicslider-gallery' );
+		wp_enqueue_style( 'responsive-lightbox-basicslider-gallery-inline' );
 		
 		// prepare style data
 		$style_data = '
@@ -2309,7 +2312,7 @@ class Responsive_Lightbox_Frontend {
 		}';
 
 		// load style data
-		$style_loaded = wp_add_inline_style( 'responsive-lightbox-basicslider-gallery', $style_data );
+		$style_loaded = wp_add_inline_style( 'responsive-lightbox-basicslider-gallery-inline', $style_data );
 		
 		if ( ! $style_loaded )
 			$this->style_data['basicslider'] .= $style_data;
@@ -2533,6 +2536,7 @@ class Responsive_Lightbox_Frontend {
 		// enqueue scripts and styles
 		wp_enqueue_script( 'responsive-lightbox-basicmasonry-gallery' );
 		wp_enqueue_style( 'responsive-lightbox-basicmasonry-gallery' );
+		wp_enqueue_style( 'responsive-lightbox-basicmasonry-gallery-inline' );
 		
 		// prepare style data
 		$style_data = '
@@ -2581,7 +2585,7 @@ class Responsive_Lightbox_Frontend {
 		}';
 
 		// load style data
-		$style_loaded = wp_add_inline_style( 'responsive-lightbox-basicmasonry-gallery', $style_data );
+		$style_loaded = wp_add_inline_style( 'responsive-lightbox-basicmasonry-gallery-inline', $style_data );
 		
 		if ( ! $style_loaded )
 			$this->style_data['basicmasonry'] .= $style_data;
@@ -2614,18 +2618,20 @@ class Responsive_Lightbox_Frontend {
 		
 		// gallery style
 		wp_register_style( 'responsive-lightbox-gallery', plugins_url( 'css/gallery.css', dirname( __FILE__ ) ), [], $rl->defaults['version'] );
+		wp_register_style( 'responsive-lightbox-gallery-inline', false, [ 'responsive-lightbox-gallery' ], $rl->defaults['version'] );
 		
 		// load style data?
 		if ( ! empty( $this->style_data['gallery'] ) )
-			wp_add_inline_style( 'responsive-lightbox-basicgrid-gallery', $this->style_data['gallery'] );
+			wp_add_inline_style( 'responsive-lightbox-gallery-inline', $this->style_data['gallery'] );
 		
 		// Basic Grid
 		// styles
 		wp_register_style( 'responsive-lightbox-basicgrid-gallery', plugins_url( 'css/gallery-basicgrid.css', dirname( __FILE__ ) ), [], $rl->defaults['version'] );
+		wp_register_style( 'responsive-lightbox-basicgrid-gallery-inline', false, [ 'responsive-lightbox-basicgrid-gallery' ], $rl->defaults['version'] );
 		
 		// load style data?
 		if ( ! empty( $this->style_data['basicgrid'] ) )
-			wp_add_inline_style( 'responsive-lightbox-basicgrid-gallery', $this->style_data['basicgrid'] );
+			wp_add_inline_style( 'responsive-lightbox-basicgrid-gallery-inline', $this->style_data['basicgrid'] );
 		
 		// Basic Slider
 		// scripts
@@ -2638,10 +2644,11 @@ class Responsive_Lightbox_Frontend {
 
 		// styles
 		wp_register_style( 'responsive-lightbox-basicslider-gallery', plugins_url( 'assets/splide/splide.min.css', dirname( __FILE__ ) ), [], '4.1.4' );
+		wp_register_style( 'responsive-lightbox-basicslider-gallery-inline', false, [ 'responsive-lightbox-basicslider-gallery' ], $rl->defaults['version'] );
 
 		// load style data?
 		if ( ! empty( $this->style_data['basicslider'] ) )
-			wp_add_inline_style( 'responsive-lightbox-basicslider-gallery', $this->style_data['basicslider'] );
+			wp_add_inline_style( 'responsive-lightbox-basicslider-gallery-inline', $this->style_data['basicslider'] );
 		
 		// Basic Masonry
 		// scripts
@@ -2655,10 +2662,11 @@ class Responsive_Lightbox_Frontend {
 
 		// styles
 		wp_register_style( 'responsive-lightbox-basicmasonry-gallery', plugins_url( 'css/gallery-basicmasonry.css', dirname( __FILE__ ) ), [], $rl->defaults['version'] );
+		wp_register_style( 'responsive-lightbox-basicmasonry-gallery-inline', false, [ 'responsive-lightbox-basicmasonry-gallery' ], $rl->defaults['version'] );
 		
 		// load style data?
 		if ( ! empty( $this->style_data['basicmasonry'] ) )
-			wp_add_inline_style( 'responsive-lightbox-basicmasonry-gallery', $this->style_data['basicmasonry'] );
+			wp_add_inline_style( 'responsive-lightbox-basicmasonry-gallery-inline', $this->style_data['basicmasonry'] );
 
 		if ( $this->should_preload_gallery_assets() ) {
 			$styles = apply_filters(
