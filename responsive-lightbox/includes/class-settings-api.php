@@ -1130,7 +1130,14 @@ class Responsive_Lightbox_Settings_API {
 					}
 
 					$base_name = preg_replace( '/\[[^\]]+\]$/', '', $args['name'] );
-					$subfield_name = $subfield_parent ? $base_name . '[' . $subfield_parent . '][' . $subfield_id . ']' : $base_name . '[' . $subfield_id . ']';
+					if ( $subfield_parent ) {
+						$parent_suffix = '[' . $subfield_parent . ']';
+						$subfield_name = preg_match( '/' . preg_quote( $parent_suffix, '/' ) . '$/', $base_name )
+							? $base_name . '[' . $subfield_id . ']'
+							: $base_name . $parent_suffix . '[' . $subfield_id . ']';
+					} else {
+						$subfield_name = $base_name . '[' . $subfield_id . ']';
+					}
 
 					// prepare subfield args
 					$subfield_args = [

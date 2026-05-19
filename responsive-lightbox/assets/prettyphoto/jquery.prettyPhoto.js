@@ -130,6 +130,20 @@
 		};
 
 		// --- Security helpers ---
+		var unsafeUrlBoundaryCharsRegexp = /["'<>`]/;
+
+		function isSafeUrlString(url) {
+			if (typeof url !== 'string' || url === '' || url.trim() !== url) return false;
+
+			for (var index = 0; index < url.length; index++) {
+				var codePoint = url.charCodeAt(index);
+
+				if (codePoint <= 31 || codePoint === 127) return false;
+			}
+
+			return !unsafeUrlBoundaryCharsRegexp.test(url);
+		}
+
 		function sanitizeHtml(html, cfg) {
 			if (window.RLG && typeof window.RLG.sanitizeHtml === 'function') {
 				try {
@@ -145,7 +159,7 @@
 
 		function isAllowedEmbedUrl(url) {
 			try {
-				if (!url) return false;
+				if (!isSafeUrlString(url)) return false;
 				// Basic protocol checks
 				var u = new URL(url, location.href);
 				var scheme = (u.protocol || '').replace(':', '').toLowerCase();
@@ -170,7 +184,10 @@
 		function sanitizeUrlForImage(url) {
 			// For images allow data:image, http(s) and same-origin relative paths
 			try {
-				if (!url) return '';
+				if (!isSafeUrlString(url)) return '';
+				if (window.RLG && typeof window.RLG.isAllowedMediaUrl === 'function') {
+					return window.RLG.isAllowedMediaUrl(url) ? url : '';
+				}
 				if (/^data:image\//i.test(url)) return url;
 				var u = new URL(url, location.href);
 				var scheme = (u.protocol || '').replace(':', '').toLowerCase();
@@ -1230,7 +1247,8 @@
 			// Inject the inline gallery!
 			if (isSet && settings.overlay_gallery) {
 				currentGalleryPage = 0;
-				toInject = '';
+				var galleryMarkup = $(settings.gallery_markup.replace(/{gallery}/g, ''));
+				var galleryList = galleryMarkup.find('ul');
 				for (var i = 0; i < pp_images.length; i++) {
 					if (!pp_images[i].match(/\b(jpg|jpeg|png|gif|webp|avif|svg)\b/gi)) {
 						classname = 'default';
@@ -1242,17 +1260,20 @@
 							classname = 'default';
 						}
 					}
-					toInject +=
-						"<li class='" +
-						classname +
-						"'><a href='#'><img src='" +
-						img_src +
-						"' width='50' alt='' /></a></li>";
+
+					var listItem = $('<li/>');
+					var listAnchor = $('<a/>', { href: '#' });
+					var listImage = $('<img/>', { width: 50, alt: '' });
+
+					if (classname) listItem.addClass(classname);
+					if (img_src) listImage.attr('src', img_src);
+
+					listAnchor.append(listImage);
+					listItem.append(listAnchor);
+					galleryList.append(listItem);
 				}
 
-				toInject = settings.gallery_markup.replace(/{gallery}/g, toInject);
-
-				$pp_pic_holder.find('#pp_full_res').after(toInject);
+				$pp_pic_holder.find('#pp_full_res').after(galleryMarkup);
 
 				(($pp_gallery = $('.pp_pic_holder .pp_gallery')),
 					($pp_gallery_li = $pp_gallery.find('li'))); // Set the gallery selectors

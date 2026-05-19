@@ -936,6 +936,31 @@
 			a = 'tosrus',
 			r = 'pagination',
 			d = !1;
+
+		function getAllowedMediaUrl(url) {
+			if (window.RLG && window.RLG.isAllowedMediaUrl) {
+				return window.RLG.isAllowedMediaUrl(url) ? url : '';
+			}
+
+			if (
+				window.RLG &&
+				window.RLG.sanitizeConfig &&
+				window.RLG.sanitizeConfig.ALLOWED_URI_REGEXP &&
+				!window.RLG.sanitizeConfig.ALLOWED_URI_REGEXP.test(url)
+			) {
+				return '';
+			}
+
+			return url;
+		}
+
+		function buildThumbnailAnchor(url) {
+			var anchor = t('<a href="#"></a>');
+
+			if (url) anchor.css('background-image', 'url("' + url + '")');
+
+			return anchor;
+		}
 		((t[a].prototype['_addon_' + r] = function () {
 			d ||
 				((i = t[a]._c),
@@ -963,32 +988,16 @@
 				)
 					switch (p.type) {
 						case 'thumbnails':
-							var c = '<a href="#" style="background-image: url(\'',
-								h = '\');"></a>';
 							this.vars.fixed
 								? (p.anchorBuilder = function (i) {
-										var url = t(this).data(s.anchor).attr('href');
-										if (
-											window.RLG &&
-											window.RLG.sanitizeConfig &&
-											window.RLG.sanitizeConfig.ALLOWED_URI_REGEXP &&
-											!window.RLG.sanitizeConfig.ALLOWED_URI_REGEXP.test(url)
-										) {
-											url = ''; // Clear invalid URLs
-										}
-										return c + url + h;
+										return buildThumbnailAnchor(
+											getAllowedMediaUrl(t(this).data(s.anchor).attr('href'))
+										);
 									})
 								: (p.anchorBuilder = function (i) {
-										var url = t(this).find('img').attr('src');
-										if (
-											window.RLG &&
-											window.RLG.sanitizeConfig &&
-											window.RLG.sanitizeConfig.ALLOWED_URI_REGEXP &&
-											!window.RLG.sanitizeConfig.ALLOWED_URI_REGEXP.test(url)
-										) {
-											url = ''; // Clear invalid URLs
-										}
-										return c + url + h;
+										return buildThumbnailAnchor(
+											getAllowedMediaUrl(t(this).find('img').attr('src'))
+										);
 									});
 							break;
 						case 'bullets':
@@ -1060,6 +1069,23 @@
 	(function (t) {
 		var i = 'tosrus',
 			s = 'image';
+
+		function getAllowedMediaUrl(url) {
+			if (window.RLG && window.RLG.isAllowedMediaUrl) {
+				return window.RLG.isAllowedMediaUrl(url) ? url : '';
+			}
+
+			if (
+				window.RLG &&
+				window.RLG.sanitizeConfig &&
+				window.RLG.sanitizeConfig.ALLOWED_URI_REGEXP &&
+				!window.RLG.sanitizeConfig.ALLOWED_URI_REGEXP.test(url)
+			) {
+				return '';
+			}
+
+			return url;
+		}
 		((t[i].media[s] = {
 			filterAnchors: function (i) {
 				return (
@@ -1074,12 +1100,7 @@
 				);
 			},
 			initAnchors: function (s, e) {
-				if (
-					window.RLG &&
-					window.RLG.sanitizeConfig &&
-					window.RLG.sanitizeConfig.ALLOWED_URI_REGEXP &&
-					!window.RLG.sanitizeConfig.ALLOWED_URI_REGEXP.test(e)
-				) {
+				if (!getAllowedMediaUrl(e)) {
 					return; // Skip invalid URIs
 				}
 				t('<img border="0" />')
@@ -1150,8 +1171,13 @@
 			},
 			initAnchors: function (s, e) {
 				var n = this._uniqueID();
-				e = e.split('vimeo.com/')[1].split('?')[0] + '?api=1&player_id=' + n;
-				var url = 'https://player.vimeo.com/video/' + e;
+				var videoId = e.split('vimeo.com/')[1].split('?')[0].replace(/\D/g, '');
+
+				if (!videoId) {
+					return;
+				}
+
+				var url = 'https://player.vimeo.com/video/' + videoId + '?api=1&player_id=' + n;
 				if (
 					window.RLG &&
 					window.RLG.isAllowedEmbedUrl &&
@@ -1159,10 +1185,13 @@
 				) {
 					return; // Skip disallowed embeds
 				}
-				(t(
-					'<iframe id="' + n + '" src="' + url + '" frameborder="0" allowfullscreen />'
-				).appendTo(s),
-					i.call(this, s));
+				t('<iframe/>', {
+					id: n,
+					src: url,
+					frameborder: 0,
+					allowfullscreen: 'allowfullscreen',
+				}).appendTo(s);
+				i.call(this, s);
 			},
 			filterSlides: function (t) {
 				return (
@@ -1231,41 +1260,57 @@
 			r = 'tosrus',
 			d = 'youtube',
 			l = !1;
+
+		function getAllowedMediaUrl(url) {
+			if (window.RLG && window.RLG.isAllowedMediaUrl) {
+				return window.RLG.isAllowedMediaUrl(url) ? url : '';
+			}
+
+			if (
+				window.RLG &&
+				window.RLG.sanitizeConfig &&
+				window.RLG.sanitizeConfig.ALLOWED_URI_REGEXP &&
+				!window.RLG.sanitizeConfig.ALLOWED_URI_REGEXP.test(url)
+			) {
+				return '';
+			}
+
+			return url;
+		}
 		((t[r].media[d] = {
 			filterAnchors: function (t) {
 				return t.attr('href').toLowerCase().indexOf('youtube.com/watch?v=') > -1;
 			},
 			initAnchors: function (s, e) {
-				var n = e;
-				e = e.split('?v=')[1].split('&')[0];
+				var videoId = e.split('?v=')[1].split('&')[0].replace(/[^a-zA-Z0-9_-]/g, '');
+
+				if (!videoId) {
+					return;
+				}
+
 				if (this.opts[d].imageLink) {
-					e = 'https://img.youtube.com/vi/' + e + '/0.jpg';
+					var thumbnailUrl = 'https://img.youtube.com/vi/' + videoId + '/0.jpg';
+					var watchUrl = 'https://www.youtube.com/watch?v=' + videoId;
 					if (
-						!(
-							window.RLG &&
-							window.RLG.isAllowedEmbedUrl &&
-							!window.RLG.isAllowedEmbedUrl(e)
-						) &&
-						!(
-							window.RLG &&
-							window.RLG.sanitizeConfig &&
-							window.RLG.sanitizeConfig.ALLOWED_URI_REGEXP &&
-							!window.RLG.sanitizeConfig.ALLOWED_URI_REGEXP.test(e)
-						)
+						getAllowedMediaUrl(thumbnailUrl) &&
+						!(window.RLG && window.RLG.isAllowedEmbedUrl && !window.RLG.isAllowedEmbedUrl(watchUrl))
 					) {
-						t(
-							'<a href="' + n + '" class="' + t[r]._c('play') + '" target="_blank" />'
-						).appendTo(s);
+						t('<a/>', {
+							href: watchUrl,
+							class: t[r]._c('play'),
+							target: '_blank',
+							rel: 'noopener noreferrer',
+						}).appendTo(s);
 						t('<img border="0" />')
 							.on(t[r]._e.load, function (i) {
 								(i.stopPropagation(),
 									s.removeClass(t[r]._c.loading).trigger(t[r]._e.loaded));
 							})
 							.appendTo(s)
-							.attr('src', e);
+							.attr('src', thumbnailUrl);
 					}
 				} else {
-					var url = 'https://www.youtube.com/embed/' + e + '?enablejsapi=1';
+					var url = 'https://www.youtube.com/embed/' + videoId + '?enablejsapi=1';
 					if (
 						!(
 							window.RLG &&
@@ -1273,9 +1318,11 @@
 							!window.RLG.isAllowedEmbedUrl(url)
 						)
 					) {
-						t('<iframe src="' + url + '" frameborder="0" allowfullscreen />').appendTo(
-							s
-						);
+						t('<iframe/>', {
+							src: url,
+							frameborder: 0,
+							allowfullscreen: 'allowfullscreen',
+						}).appendTo(s);
 						i.call(this, s);
 					}
 				}

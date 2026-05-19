@@ -99,6 +99,15 @@ class Responsive_Lightbox_Folders {
 	}
 
 	/**
+	 * Check whether folder tree drag and drop is enabled for the current user.
+	 *
+	 * @return bool
+	 */
+	private function is_term_drag_and_drop_enabled() {
+		return (bool) apply_filters( 'rl_folders_term_drag_and_drop_enabled', true, get_current_user_id() );
+	}
+
+	/**
 	 * Initialize folders.
 	 *
 	 * @return void
@@ -951,6 +960,9 @@ class Responsive_Lightbox_Folders {
 		// get active taxonomy
 		$taxonomy = $this->get_active_taxonomy();
 
+		if ( ! $this->is_term_drag_and_drop_enabled() )
+			wp_send_json_error( [ 'message' => __( 'You do not have permission to move folders.', 'responsive-lightbox' ) ] );
+
 		// update term
 		$update = wp_update_term( (int) $_POST['term_id'], $taxonomy, [ 'parent' => (int) $_POST['parent_id'] ] );
 
@@ -1770,6 +1782,8 @@ class Responsive_Lightbox_Folders {
 
 		// pass resolved selected term to JS (uses $term_id already resolved from URL > stored > default)
 		if ( $is_upload_screen ) {
+			$script_data['term_drag_and_drop'] = $this->is_term_drag_and_drop_enabled();
+
 			if ( $term_id === 0 )
 				$script_data['selected_term'] = 'all';
 			elseif ( $term_id === -1 )

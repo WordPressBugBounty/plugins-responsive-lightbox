@@ -3,8 +3,8 @@ Contributors: dfactory
 Donate link: http://www.dfactory.co/
 Tags: gallery, galleries, lightbox, image, images
 Requires at least: 6.0
-Tested up to: 6.9.4
-Stable tag: 2.7.6
+Tested up to: 7.0
+Stable tag: 2.7.7
 Requires PHP: 7.0
 License: MIT License
 License URI: http://opensource.org/licenses/MIT
@@ -139,6 +139,14 @@ Responsive Lightbox and Gallery plugin comes with many styles and effects alread
 2. screenshot-2.jpg
 
 == Changelog ==
+
+= 2.7.7 =
+* Security: Fix Featherlight comments XSS via safe URL handling
+* Security: Fix prettyPhoto and TosRUS lightbox URL injection sinks
+* Fix: Restore Featherlight image viewport sizing
+* Fix: Preserve cache-busted image lightbox URLs
+* Fix: Save grouped lightbox settings with correct field names
+* Tweak: Allow media folder drag and drop to be disabled per user
 
 = 2.7.6 =
 * Fix: Restore built-in gallery inline styles after proactive asset preloading
@@ -624,5 +632,5 @@ Initial release
 
 == Upgrade Notice ==
 
-= 2.7.6 =
-Restores built-in gallery inline styles after proactive asset preloading.
+= 2.7.7 =
+Security hardening for Featherlight, prettyPhoto, and TosRUS, plus fixes for Featherlight sizing, cache-busted lightbox URLs, grouped lightbox settings saves, and a per-user Media Folders drag-and-drop toggle.

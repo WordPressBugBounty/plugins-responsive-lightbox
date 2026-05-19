@@ -142,7 +142,7 @@ class Responsive_Lightbox_Frontend {
 		// images
 		if ( $args['settings']['plugin']['image_links'] || $args['settings']['plugin']['images_as_gallery'] || $args['settings']['plugin']['force_custom_gallery'] ) {
 			// search for image links
-			preg_match_all( '/<a([^>]*?)\bhref=(["\'])([^"\']*?)\.(bmp|gif|jpeg|jpg|png|webp)\2(.*?)>(.*?)<\/a>/is', $content, $links );
+			preg_match_all( '/<a([^>]*?)\bhref=(["\'])([^"\']*?)\.(bmp|gif|jpeg|jpg|png|webp)((?:[?#][^"\']*?)?)\2(.*?)>(.*?)<\/a>/is', $content, $links );
 
 			// found any links?
 			if ( ! empty ( $links[0] ) ) {
@@ -160,7 +160,7 @@ class Responsive_Lightbox_Frontend {
 					$args['link_number'] = $link_number;
 
 					// link parts
-					$args['link_parts'] = [ $links[1][$link_number], $links[3][$link_number], $links[4][$link_number], $links[5][$link_number], $links[6][$link_number] ];
+					$args['link_parts'] = [ $links[1][$link_number], $links[3][$link_number], $links[4][$link_number], $links[5][$link_number], $links[6][$link_number], $links[7][$link_number] ];
 
 					// get title type
 					$title_arg = $args['settings']['plugin']['force_custom_gallery'] ? $args['settings']['plugin']['gallery_image_title'] : $args['settings']['plugin']['image_title'];
@@ -181,7 +181,7 @@ class Responsive_Lightbox_Frontend {
 						$args['caption'] = '';
 
 					// rl gallery link?
-					if ( preg_match( '/class="(?:.*?)rl-gallery-link[^"]*?"/i', $links[1][$link_number] ) === 1 || preg_match( '/class="(?:.*?)rl-gallery-link[^"]*?"/i', $links[5][$link_number] ) === 1 ) {
+					if ( preg_match( '/class="(?:.*?)rl-gallery-link[^"]*?"/i', $links[1][$link_number] ) === 1 || preg_match( '/class="(?:.*?)rl-gallery-link[^"]*?"/i', $links[6][$link_number] ) === 1 ) {
 						// update link allowing only filter to run, bypass default changes
 						$content = str_replace( $link, $this->lightbox_image_link( $link, $args, true ), $content );
 					} else {
@@ -313,9 +313,9 @@ class Responsive_Lightbox_Frontend {
 						if ( $result[2] !== 'norl' )
 							$link = preg_replace( '/\brel=(["\'])(.*?)\1/s', 'data-rel="' . esc_attr( $args['selector'] ) . '-gallery-' . (int) $this->gallery_no . '" data-rl_title="__RL_IMAGE_TITLE__" data-rl_caption="__RL_IMAGE_CAPTION__"' . ( $args['script'] === 'magnific' ? ' data-magnific_type="gallery"' : '' ) . ( $args['script'] === 'imagelightbox' ? ' data-imagelightbox="' . (int) $args['link_number'] . '"' : '' ), $link, 1 );
 					} else
-						$link = '<a' . $args['link_parts'][0] . ' href="' . $args['link_parts'][1] . '.' . $args['link_parts'][2] . '" data-rel="' . esc_attr( $args['selector'] ) . '-gallery-' . (int) $this->gallery_no . '" data-rl_title="__RL_IMAGE_TITLE__" data-rl_caption="__RL_IMAGE_CAPTION__"' . ( $args['script'] === 'magnific' ? ' data-magnific_type="gallery"' : '' ) . ( $args['script'] === 'imagelightbox' ? ' data-imagelightbox="' . (int) $args['link_number'] . '"' : '' ) . $args['link_parts'][3] . '>' . $args['link_parts'][4] . '</a>';
+						$link = '<a' . $args['link_parts'][0] . ' href="' . $args['link_parts'][1] . '.' . $args['link_parts'][2] . $args['link_parts'][3] . '" data-rel="' . esc_attr( $args['selector'] ) . '-gallery-' . (int) $this->gallery_no . '" data-rl_title="__RL_IMAGE_TITLE__" data-rl_caption="__RL_IMAGE_CAPTION__"' . ( $args['script'] === 'magnific' ? ' data-magnific_type="gallery"' : '' ) . ( $args['script'] === 'imagelightbox' ? ' data-imagelightbox="' . (int) $args['link_number'] . '"' : '' ) . $args['link_parts'][4] . '>' . $args['link_parts'][5] . '</a>';
 				} else
-					$link = '<a' . $args['link_parts'][0] . 'href="' . $args['link_parts'][1] . '.' . $args['link_parts'][2] . '"' . $args['link_parts'][3] . ' data-rel="' . esc_attr( $args['selector'] ) . ( $args['settings']['plugin']['images_as_gallery'] ? esc_attr( $args['rel_hash'] ) : '-image-' . (int) $args['link_number'] ) . '"' . ( $args['script'] === 'magnific' ? ' data-magnific_type="image"' : '' ) . ( $args['script'] === 'imagelightbox' ? ' data-imagelightbox="' . (int) $args['link_number'] . '"' : '' ) . ' data-rl_title="__RL_IMAGE_TITLE__" data-rl_caption="__RL_IMAGE_CAPTION__">' . $args['link_parts'][4] . '</a>';
+					$link = '<a' . $args['link_parts'][0] . 'href="' . $args['link_parts'][1] . '.' . $args['link_parts'][2] . $args['link_parts'][3] . '"' . $args['link_parts'][4] . ' data-rel="' . esc_attr( $args['selector'] ) . ( $args['settings']['plugin']['images_as_gallery'] ? esc_attr( $args['rel_hash'] ) : '-image-' . (int) $args['link_number'] ) . '"' . ( $args['script'] === 'magnific' ? ' data-magnific_type="image"' : '' ) . ( $args['script'] === 'imagelightbox' ? ' data-imagelightbox="' . (int) $args['link_number'] . '"' : '' ) . ' data-rl_title="__RL_IMAGE_TITLE__" data-rl_caption="__RL_IMAGE_CAPTION__">' . $args['link_parts'][5] . '</a>';
 			}
 
 			// prepare title and caption
@@ -1060,7 +1060,7 @@ class Responsive_Lightbox_Frontend {
 
 		if ( $rl->options['settings']['force_custom_gallery'] ) {
 			// search for image links
-			preg_match_all( '/<a(.*?)\bhref=(["\'])([^"\']*?)\.(bmp|gif|jpeg|jpg|png|webp)\2(.*?)>/i', $content, $links );
+			preg_match_all( '/<a(.*?)\bhref=(["\'])([^"\']*?)\.(bmp|gif|jpeg|jpg|png|webp)((?:[?#][^"\']*?)?)\2(.*?)>/i', $content, $links );
 
 			// found any links?
 			if ( ! empty ( $links[0] ) ) {
@@ -1103,7 +1103,7 @@ class Responsive_Lightbox_Frontend {
 
 						$content = str_replace( $link, preg_replace( '/\brel=(["\'])(.*?)\1/', 'data-rel="' . esc_attr( $rl->options['settings']['selector'] ) . '-gallery-' . esc_attr( base64_encode( sanitize_text_field( $result[2] ) ) ) . '" data-rl_title="' . esc_attr( $title ) . '" data-rl_caption="' . esc_attr( $caption ) . '"' . ( $script === 'imagelightbox' ? ' data-imagelightbox="' . (int) $link_number . '"' : '' ), $link, 1 ), $content );
 					} else
-						$content = str_replace( $link, '<a' . $links[1][$link_number] . ' href="' . $links[3][$link_number] . '.' . $links[4][$link_number] . '" data-rel="' . esc_attr( $rl->options['settings']['selector'] ) . '-gallery-' . esc_attr( base64_encode( $this->gallery_no ) ) . '" data-rl_title="' . esc_attr( $title ) . '" data-rl_caption="' . esc_attr( $caption ) . '"' . ( $script === 'imagelightbox' ? ' data-imagelightbox="' . (int) $link_number . '"' : '' ) . $links[5][$link_number] . '>', $content );
+						$content = str_replace( $link, '<a' . $links[1][$link_number] . ' href="' . $links[3][$link_number] . '.' . $links[4][$link_number] . $links[5][$link_number] . '" data-rel="' . esc_attr( $rl->options['settings']['selector'] ) . '-gallery-' . esc_attr( base64_encode( $this->gallery_no ) ) . '" data-rl_title="' . esc_attr( $title ) . '" data-rl_caption="' . esc_attr( $caption ) . '"' . ( $script === 'imagelightbox' ? ' data-imagelightbox="' . (int) $link_number . '"' : '' ) . $links[6][$link_number] . '>', $content );
 				}
 			}
 		}
