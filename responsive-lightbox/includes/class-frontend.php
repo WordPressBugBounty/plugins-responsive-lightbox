@@ -92,6 +92,26 @@ class Responsive_Lightbox_Frontend {
 	}
 
 	/**
+	 * Determine whether a matched image link is nested inside malformed anchor markup.
+	 *
+	 * @param string $content Original content.
+	 * @param int $offset Matched link offset.
+	 * @param string $inner_html Matched link inner HTML.
+	 * @return bool
+	 */
+	private function is_nested_anchor_context( $content, $offset, $inner_html ) {
+		if ( preg_match( '/<a(?=[\s>])/i', $inner_html ) === 1 )
+			return true;
+
+		if ( $offset <= 0 )
+			return false;
+
+		$prefix = substr( $content, 0, $offset );
+
+		return preg_match_all( '/<a(?=[\s>])/i', $prefix, $matches ) > preg_match_all( '/<\/a>/i', $prefix, $matches );
+	}
+
+	/**
 	 * Add lightbox to images, galleries and videos.
 	 *
 	 * @param string $content HTML content
@@ -142,10 +162,13 @@ class Responsive_Lightbox_Frontend {
 		// images
 		if ( $args['settings']['plugin']['image_links'] || $args['settings']['plugin']['images_as_gallery'] || $args['settings']['plugin']['force_custom_gallery'] ) {
 			// search for image links
-			preg_match_all( '/<a([^>]*?)\bhref=(["\'])([^"\']*?)\.(bmp|gif|jpeg|jpg|png|webp)((?:[?#][^"\']*?)?)\2(.*?)>(.*?)<\/a>/is', $content, $links );
+			preg_match_all( '/<a([^>]*?)\bhref=(["\'])([^"\']*?)\.(bmp|gif|jpeg|jpg|png|webp|avif)((?:[?#][^"\']*?)?)\2(.*?)>(.*?)<\/a>/is', $content, $links );
 
 			// found any links?
 			if ( ! empty ( $links[0] ) ) {
+				$source_content = $content;
+				$search_offset = 0;
+
 				// generate hash for single images gallery
 				if ( $args['settings']['plugin']['images_as_gallery'] )
 					$args['rel_hash'] = '-gallery-' . $this->generate_hash();
@@ -153,6 +176,16 @@ class Responsive_Lightbox_Frontend {
 					$args['rel_hash'] = '';
 
 				foreach ( $links[0] as $link_number => $link ) {
+					$link_offset = strpos( $source_content, $link, $search_offset );
+
+					if ( $link_offset === false )
+						continue;
+
+					$search_offset = $link_offset + strlen( $link );
+
+					if ( $this->is_nested_anchor_context( $source_content, $link_offset, $links[7][$link_number] ) )
+						continue;
+
 					// get attachment id
 					$args['image_id'] = $this->get_attachment_id_by_url( $links[3][$link_number] . '.' . $links[4][$link_number] );
 
@@ -291,6 +324,10 @@ class Responsive_Lightbox_Frontend {
 		if ( ! $only_filter ) {
 			if ( isset( $_GET['rl_gallery_no'], $_GET['rl_page'] ) )
 				$this->gallery_no = (int) $_GET['rl_gallery_no'];
+
+			// preserve explicit opt-outs without adding lightbox attributes or title/caption data
+			if ( preg_match( '/<a[^>]*?\b(?:data-rel|rel)=(["\'])norl\1[^>]*?>/is', $link ) === 1 )
+				return apply_filters( 'rl_lightbox_image_link', $link, $args );
 
 			// link already contains data-rel attribute?
 			if ( preg_match( '/<a[^>]*?\bdata-rel=(["\'])(.*?)\1[^>]*?>/is', $link, $result ) === 1 ) {
@@ -1060,7 +1097,7 @@ class Responsive_Lightbox_Frontend {
 
 		if ( $rl->options['settings']['force_custom_gallery'] ) {
 			// search for image links
-			preg_match_all( '/<a(.*?)\bhref=(["\'])([^"\']*?)\.(bmp|gif|jpeg|jpg|png|webp)((?:[?#][^"\']*?)?)\2(.*?)>/i', $content, $links );
+			preg_match_all( '/<a(.*?)\bhref=(["\'])([^"\']*?)\.(bmp|gif|jpeg|jpg|png|webp|avif)((?:[?#][^"\']*?)?)\2(.*?)>/i', $content, $links );
 
 			// found any links?
 			if ( ! empty ( $links[0] ) ) {

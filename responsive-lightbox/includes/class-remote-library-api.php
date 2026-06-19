@@ -20,7 +20,8 @@ abstract class Responsive_Lightbox_Remote_Library_API {
 		'png'	=> 'image/png',
 		'tif'	=> 'image/tiff',
 		'tiff'	=> 'image/tiff',
-		'webp'	=> 'image/webp'
+		'webp'	=> 'image/webp',
+		'avif'	=> 'image/avif'
 	];
 	protected $rl;
 	protected $slug;

@@ -393,7 +393,7 @@ trait Responsive_Lightbox_Galleries_Image_Methods {
 						$wp_query_args = array(
 							'post_type'			=> 'attachment',
 							'post_status'		=> 'inherit',
-							'post_mime_type'	=> array( 'image/jpeg', 'image/gif', 'image/png' ),
+							'post_mime_type'	=> array( 'image/jpeg', 'image/gif', 'image/png', 'image/webp', 'image/avif' ),
 							'nopaging'			=> true,
 							'posts_per_page'	=> -1,
 							'fields'			=> 'ids',

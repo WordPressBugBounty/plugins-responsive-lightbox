@@ -1735,7 +1735,7 @@ class Responsive_Lightbox_Folders {
 				),
 				'template'			=> '
 					<div id="rl-folders-tree-container">
-						<div class="media-toolbar wp-filter">
+						<div class="rl-folders-toolbar wp-filter">
 							<div class="view-switch rl-folders-action-links">
 								<a href="#" title="' . esc_attr( $taxonomy->labels->add_new_item ) . '" class="dashicons dashicons-plus rl-folders-add-new-folder"></a>
 								<a href="#" title="' . esc_attr( sprintf( __( 'Save new %s', 'responsive-lightbox' ), $taxonomy->labels->singular_name ) ) . '" class="dashicons dashicons-yes rl-folders-save-new-folder" style="display: none;"></a>

@@ -144,7 +144,7 @@
 					/(youtube|youtube-nocookie|youtu|vimeo)\.(com|be)\/(watch\?v=([\w-]+)|([\w-]+))/
 				);
 
-			if (href.match(/\.(jpeg|jpg|gif|png|webp)$/i) !== null) {
+			if (href.match(/\.(jpeg|jpg|gif|png|webp|avif)(?:[?#].*)?$/i) !== null) {
 				return true;
 			}
 			// Video (Youtube/Vimeo)
@@ -182,7 +182,7 @@
 			}
 
 			// Image
-			if (href.match(/\.(jpeg|jpg|gif|png|webp)$/i) !== null) {
+			if (href.match(/\.(jpeg|jpg|gif|png|webp|avif)(?:[?#].*)?$/i) !== null) {
 				if (!RLG.sanitizeConfig.ALLOWED_URI_REGEXP.test(href)) {
 					var wrapError = $(
 						'<div class="nivo-lightbox-error"><p>' +

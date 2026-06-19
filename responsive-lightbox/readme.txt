@@ -4,7 +4,7 @@ Donate link: http://www.dfactory.co/
 Tags: gallery, galleries, lightbox, image, images
 Requires at least: 6.0
 Tested up to: 7.0
-Stable tag: 2.7.7
+Stable tag: 2.7.8
 Requires PHP: 7.0
 License: MIT License
 License URI: http://opensource.org/licenses/MIT
@@ -139,6 +139,10 @@ Responsive Lightbox and Gallery plugin comes with many styles and effects alread
 2. screenshot-2.jpg
 
 == Changelog ==
+
+= 2.7.8 =
+* New: Add AVIF support across core galleries, built-in lightboxes, and Remote Library workflows
+* Fix: Prevent Media Library toolbar and modal regressions
 
 = 2.7.7 =
 * Security: Fix Featherlight comments XSS via safe URL handling
@@ -632,5 +636,5 @@ Initial release
 
 == Upgrade Notice ==
 
-= 2.7.7 =
-Security hardening for Featherlight, prettyPhoto, and TosRUS, plus fixes for Featherlight sizing, cache-busted lightbox URLs, grouped lightbox settings saves, and a per-user Media Folders drag-and-drop toggle.
+= 2.7.8 =
+Adds AVIF support across core gallery and lightbox flows, plus fixes Media Library toolbar and modal regressions.

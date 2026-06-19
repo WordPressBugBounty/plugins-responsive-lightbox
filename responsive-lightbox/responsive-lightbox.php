@@ -2,7 +2,7 @@
 /*
 Plugin Name: Responsive Lightbox & Gallery
 Description: Responsive Lightbox & Gallery allows users to create galleries and view larger versions of images, galleries and videos in a lightbox (overlay) effect optimized for mobile devices.
-Version: 2.7.7
+Version: 2.7.8
 Author: dFactory
 Author URI: http://www.dfactory.co/
 Plugin URI: http://www.dfactory.co/products/responsive-lightbox/
@@ -45,7 +45,7 @@ include_once( RESPONSIVE_LIGHTBOX_PATH . 'includes' . DIRECTORY_SEPARATOR . 'fun
  * Responsive Lightbox class.
  *
  * @class Responsive_Lightbox
- * @version	2.7.7
+ * @version	2.7.8
  */
 class Responsive_Lightbox {
 
@@ -284,7 +284,7 @@ class Responsive_Lightbox {
 			'origin_left'		=> true,
 			'origin_top'		=> true
 		],
-		'version' => '2.7.7',
+		'version' => '2.7.8',
 		'activation_date' => ''
 	];
 	public $options = [];
@@ -2068,7 +2068,7 @@ class Responsive_Lightbox {
 					$has_gallery = has_shortcode( $post->post_content, 'gallery' ) || has_shortcode( $post->post_content, 'rl_gallery' );
 
 					// are images present in content
-					preg_match_all( '/<a(.*?)href=(?:\'|")([^\'\"]*?)\.(bmp|gif|jpeg|jpg|png|webp)(?:[?#][^\'\"]*?)?(?:\'|")(.*?)>/i', $post->post_content, $links );
+					preg_match_all( '/<a(.*?)href=(["\'])([^"\']*?)\.(bmp|gif|jpeg|jpg|png|webp|avif)((?:[?#][^"\']*?)?)\2(.*?)>/i', $post->post_content, $links );
 
 					$has_images = (bool) $links[0];
 

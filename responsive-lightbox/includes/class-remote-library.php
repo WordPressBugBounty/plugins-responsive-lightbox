@@ -20,7 +20,8 @@ class Responsive_Lightbox_Remote_Library {
 		'png'	=> 'image/png',
 		'tif'	=> 'image/tiff',
 		'tiff'	=> 'image/tiff',
-		'webp'	=> 'image/webp'
+		'webp'	=> 'image/webp',
+		'avif'	=> 'image/avif'
 	];
 
 	/**
@@ -582,10 +583,10 @@ class Responsive_Lightbox_Remote_Library {
 										$result['error'] = true;
 										$result['message'] = __( 'Invalid image type', 'responsive-lightbox' );
 									}
-								} else {
-									$result['error'] = true;
-									$result['message'] = $response->get_error_message();
 								}
+							} else {
+								$result['error'] = true;
+								$result['message'] = $response->get_error_message();
 							}
 						}
 					} elseif ( empty( $result['error'] ) ) {
