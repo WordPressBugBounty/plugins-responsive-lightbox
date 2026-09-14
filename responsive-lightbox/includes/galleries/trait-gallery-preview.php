@@ -13,25 +13,191 @@ if ( ! defined( 'ABSPATH' ) )
 trait Responsive_Lightbox_Gallery_Preview {
 
 	/**
+	 * Return all bounded preview snapshots stored for this site.
+	 *
+	 * Snapshot records deliberately contain only parent, revision, user, token
+	 * digest, and expiry data; unsaved gallery data remains revision metadata.
+	 *
+	 * @return array
+	 */
+	private function get_preview_snapshots() {
+		$snapshots = get_option( self::PREVIEW_SNAPSHOTS_OPTION, [] );
+		return is_array( $snapshots ) ? $snapshots : [];
+	}
+
+	/**
+	 * Persist preview snapshots without autoloading request-scoped state.
+	 *
+	 * @param array $snapshots
+	 * @return void
+	 */
+	private function update_preview_snapshots( $snapshots ) {
+		if ( empty( $snapshots ) ) {
+			delete_option( self::PREVIEW_SNAPSHOTS_OPTION );
+			return;
+		}
+
+		update_option( self::PREVIEW_SNAPSHOTS_OPTION, $snapshots, false );
+	}
+
+	/**
+	 * Derive a non-reversible binding for the signed preview URL.
+	 *
+	 * @param int $gallery_id
+	 * @param int $revision_id
+	 * @param int $user_id
+	 * @param string $nonce
+	 * @return string
+	 */
+	private function preview_snapshot_token( $gallery_id, $revision_id, $user_id, $nonce ) {
+		return wp_hash( implode( '|', [ (int) $gallery_id, (int) $revision_id, (int) $user_id, $nonce ] ), 'responsive_lightbox_preview_snapshot' );
+	}
+
+	/**
+	 * Start or refresh the bounded preview snapshot for an authorized request.
+	 *
+	 * @param int $gallery_id
+	 * @param int $revision_id
+	 * @param int $user_id
+	 * @param string $nonce
+	 * @return bool Whether the snapshot persisted and can be cleaned later.
+	 */
+	private function remember_preview_snapshot( $gallery_id, $revision_id, $user_id, $nonce ) {
+		$token = $this->preview_snapshot_token( $gallery_id, $revision_id, $user_id, $nonce );
+		$snapshots = $this->get_preview_snapshots();
+		foreach ( $snapshots as $key => $snapshot ) {
+			if ( is_array( $snapshot ) && isset( $snapshot['parent_gallery_id'], $snapshot['user_id'] ) && (int) $snapshot['parent_gallery_id'] === (int) $gallery_id && (int) $snapshot['user_id'] === (int) $user_id && $key !== $token ) {
+				unset( $snapshots[$key] );
+			}
+		}
+
+		$snapshots[$token] = [
+			'parent_gallery_id' => (int) $gallery_id,
+			'revision_id' => (int) $revision_id,
+			'user_id' => (int) $user_id,
+			'token' => $token,
+			'created_at' => time(),
+			'expires_at' => time() + self::PREVIEW_SNAPSHOT_TTL,
+		];
+		$this->update_preview_snapshots( $snapshots );
+
+		$stored = $this->get_preview_snapshots();
+		return isset( $stored[$token] ) && is_array( $stored[$token] ) && (int) $stored[$token]['revision_id'] === (int) $revision_id;
+	}
+
+	/**
+	 * Confirm a pagination request still owns a live signed preview snapshot.
+	 *
+	 * @param int $gallery_id
+	 * @param int $revision_id
+	 * @param int $user_id
+	 * @param string $nonce
+	 * @return bool
+	 */
+	private function preview_snapshot_is_valid( $gallery_id, $revision_id, $user_id, $nonce ) {
+		$key = $this->preview_snapshot_token( $gallery_id, $revision_id, $user_id, $nonce );
+		$snapshots = $this->get_preview_snapshots();
+		if ( ! isset( $snapshots[$key] ) || ! is_array( $snapshots[$key] ) )
+			return false;
+
+		$snapshot = $snapshots[$key];
+		$expired = empty( $snapshot['expires_at'] ) || (int) $snapshot['expires_at'] <= time();
+		$valid = ! $expired
+			&& isset( $snapshot['parent_gallery_id'], $snapshot['revision_id'], $snapshot['user_id'], $snapshot['token'] )
+			&& (int) $snapshot['parent_gallery_id'] === (int) $gallery_id
+			&& (int) $snapshot['revision_id'] === (int) $revision_id
+			&& (int) $snapshot['user_id'] === (int) $user_id
+			&& wp_is_post_revision( $revision_id ) === (int) $gallery_id
+			&& hash_equals( $snapshot['token'], $this->preview_snapshot_token( $gallery_id, $revision_id, $user_id, $nonce ) );
+
+		if ( ! $valid && $expired ) {
+			unset( $snapshots[$key] );
+			$this->update_preview_snapshots( $snapshots );
+		}
+
+		return $valid;
+	}
+
+	/**
+	 * Remove all authorization snapshots belonging to a gallery.
+	 *
+	 * @param int $gallery_id
+	 * @return void
+	 */
+	public function clear_preview_snapshots_for_gallery( $gallery_id ) {
+		$gallery_id = (int) $gallery_id;
+		if ( $gallery_id <= 0 )
+			return;
+
+		$snapshots = $this->get_preview_snapshots();
+		foreach ( $snapshots as $key => $snapshot ) {
+			if ( is_array( $snapshot ) && isset( $snapshot['parent_gallery_id'] ) && (int) $snapshot['parent_gallery_id'] === $gallery_id )
+				unset( $snapshots[$key] );
+		}
+		$this->update_preview_snapshots( $snapshots );
+	}
+
+	/**
+	 * Invalidate snapshots when their parent gallery has been saved.
+	 *
+	 * @param int $post_id
+	 * @param object $post
+	 * @param bool $update
+	 * @return void
+	 */
+	public function clear_preview_snapshots_for_saved_gallery( $post_id, $post, $update ) {
+		if ( is_object( $post ) && $post->post_type === 'rl_gallery' )
+			$this->clear_preview_snapshots_for_gallery( $post_id );
+	}
+
+	/**
+	 * Invalidate snapshots before a parent gallery is deleted.
+	 *
+	 * @param int $post_id
+	 * @param object|null $post
+	 * @return void
+	 */
+	public function clear_preview_snapshots_for_deleted_gallery( $post_id, $post = null ) {
+		if ( is_object( $post ) && $post->post_type === 'rl_gallery' )
+			$this->clear_preview_snapshots_for_gallery( $post_id );
+	}
+
+	/**
+	 * Remove expired or orphaned authorization snapshots on normal request initialization.
+	 *
+	 * @return void
+	 */
+	public function sweep_expired_preview_snapshots() {
+		$snapshots = $this->get_preview_snapshots();
+		foreach ( $snapshots as $key => $snapshot ) {
+			$parent_id = is_array( $snapshot ) && isset( $snapshot['parent_gallery_id'] ) ? (int) $snapshot['parent_gallery_id'] : 0;
+			$revision_id = is_array( $snapshot ) && isset( $snapshot['revision_id'] ) ? (int) $snapshot['revision_id'] : 0;
+			$expired = ! is_array( $snapshot ) || empty( $snapshot['expires_at'] ) || (int) $snapshot['expires_at'] <= time();
+			if ( $expired || $parent_id <= 0 || $revision_id <= 0 || get_post_type( $parent_id ) !== 'rl_gallery' || wp_is_post_revision( $revision_id ) !== $parent_id ) {
+				unset( $snapshots[$key] );
+			}
+		}
+		$this->update_preview_snapshots( $snapshots );
+	}
+
+	/**
 	 * Save gallery revision metadata.
 	 *
 	 * @param int $revision_id
 	 * @return void
 	 */
 	public function save_revision( $revision_id ) {
-		// get revision
 		$revision = get_post( $revision_id );
+		if ( ! is_object( $revision ) || ! wp_is_post_revision( $revision_id ) )
+			return;
 
-		// get gallery ID
-		$post_id = $revision->post_parent;
-
-		// is it rl gallery?
-		if ( get_post_type( $post_id ) !== 'rl_gallery' )
+		$post_id = (int) wp_is_post_revision( $revision_id );
+		if ( $post_id <= 0 || $post_id !== (int) $revision->post_parent || get_post_type( $post_id ) !== 'rl_gallery' )
 			return;
 
 		$this->revision_id = $revision_id;
 
-		if ( ! wp_is_post_revision( $revision_id ) || ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || empty( $_POST['rl_gallery'] ) )
+		if ( ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || ! $this->gallery_save_request_is_valid( $post_id, get_post( $post_id ) ) )
 			return;
 
 		// save revisioned meta data
@@ -58,24 +224,12 @@ trait Responsive_Lightbox_Gallery_Preview {
 	}
 
 	/**
-	 * Delete gallery revision at shutdown.
-	 *
-	 * @global object $post
+	 * End a gallery preview request without acting on request-supplied revisions.
 	 *
 	 * @return void
 	 */
 	public function shutdown_preview() {
-		// is it a frontend preview?
-		if ( is_preview() && isset( $_GET['rl_gallery_revision_id'] ) ) {
-			global $post;
-
-			// cast revision ID
-			$revision_id = (int) $_GET['rl_gallery_revision_id'];
-
-			// is it a valid revision?
-			if ( get_post_type( $post->ID ) === 'rl_gallery' && wp_is_post_revision( $revision_id ) === (int) $post->ID )
-				wp_delete_post_revision( $revision_id );
-		}
+		// Snapshots are authorization records only. WordPress owns revision retention.
 	}
 
 	/**
@@ -92,9 +246,6 @@ trait Responsive_Lightbox_Gallery_Preview {
 		if ( get_post_type( $object_id ) !== 'rl_gallery' )
 			return $value;
 
-		// get current post
-		$post = get_post();
-
 		// prepare keys
 		$keys = array( '_rl_featured_image_type', '_rl_featured_image', '_rl_images_count', '_thumbnail_id' );
 
@@ -103,18 +254,17 @@ trait Responsive_Lightbox_Gallery_Preview {
 			$keys[] = '_rl_' . $key;
 		}
 
-		// restrict only to specified data
-		if ( empty( $post ) || (int) $post->ID !== (int) $object_id || ! in_array( $meta_key, $keys, true ) || $post->post_type === 'revision' )
+		$revision_id = isset( $this->preview_revision_id ) ? (int) $this->preview_revision_id : 0;
+
+		// Restrict preview metadata to the already authorized signed revision.
+		if ( ! in_array( $meta_key, $keys, true ) || $revision_id <= 0 || wp_is_post_revision( $revision_id ) !== (int) $object_id )
 			return $value;
 
-		// grab the last autosave
-		$preview = wp_get_post_autosave( $post->ID );
-
-		// invalid revision?
-		if ( ! is_object( $preview ) )
+		// Revisions that predate gallery metadata must retain their parent value.
+		if ( ! metadata_exists( 'post', $revision_id, $meta_key ) )
 			return $value;
 
 		// finally replace metadata
-		return array( get_post_meta( $preview->ID, $meta_key, $single ) );
+		return array( get_post_meta( $revision_id, $meta_key, $single ) );
 	}
 }

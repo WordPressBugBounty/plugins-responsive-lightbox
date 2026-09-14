@@ -34,12 +34,14 @@ trait Responsive_Lightbox_Gallery_Sanitize {
 
 			case 'taxonomy':
 				if ( is_array( $value ) ) {
-					if ( isset( $value['id'] ) )
-						$value['id'] = (int) $value['id'];
-					else
-						$value['id'] = 0;
+					$data = [];
+					if ( array_key_exists( 'id', $value ) && is_scalar( $value['id'] ) )
+						$data['id'] = (int) $value['id'];
 
-					$value['children'] = isset( $value['children'] );
+					if ( array_key_exists( 'children', $value ) && is_scalar( $value['children'] ) )
+						$data['children'] = ! empty( $value['children'] );
+
+					$value = $data;
 				} else
 					$value = $args['default'];
 
@@ -48,7 +50,7 @@ trait Responsive_Lightbox_Gallery_Sanitize {
 					$terms = [];
 
 					foreach ( $args['options'] as $option_data ) {
-						if ( isset( $option_data['terms'] ) && is_array( $option_data['terms'] ) )
+						if ( is_array( $option_data ) && isset( $option_data['terms'] ) && is_array( $option_data['terms'] ) )
 							$terms += $option_data['terms'];
 					}
 
@@ -72,7 +74,8 @@ trait Responsive_Lightbox_Gallery_Sanitize {
 						$terms = [];
 
 						foreach ( $args['options'] as $data ) {
-							$terms += $data['terms'];
+							if ( is_array( $data ) && isset( $data['terms'] ) && is_array( $data['terms'] ) )
+								$terms += $data['terms'];
 						}
 
 						$args['options'] = $terms;
@@ -81,7 +84,7 @@ trait Responsive_Lightbox_Gallery_Sanitize {
 					$values = [];
 
 					foreach ( $value as $subvalue ) {
-						if ( array_key_exists( $subvalue, $args['options'] ) )
+						if ( is_scalar( $subvalue ) && array_key_exists( $subvalue, $args['options'] ) )
 							$values[] = $subvalue;
 					}
 
@@ -161,79 +164,75 @@ trait Responsive_Lightbox_Gallery_Sanitize {
 
 			case 'media_library':
 				if ( is_array( $value ) ) {
-					$data = $args['default'];
+					$data = [];
 
 					if ( rl_current_lightbox_supports( [ 'youtube', 'vimeo' ], 'OR' ) ) {
 						$reindexed_embed = [];
 
 						// check embed items
-						if ( array_key_exists( 'embed', $value ) && is_array( $value['embed'] ) && ! empty( $value['embed'] ) ) {
-							$copy = $value['embed'];
-
+						if ( array_key_exists( 'embed', $value ) && is_array( $value['embed'] ) ) {
+							$data['embed'] = [];
 							$index = 0;
 
 							foreach ( $value['embed'] as $embed_id => $embed_data ) {
-								// check url
-								if ( ! array_key_exists( 'url', $embed_data ) ) {
-									unset( $copy[$embed_id] );
-
+								if ( ! is_array( $embed_data ) || ! array_key_exists( 'url', $embed_data ) || ! is_scalar( $embed_data['url'] ) )
 									continue;
-								} else
-									$copy[$embed_id]['url'] = esc_url_raw( $embed_data['url'] );
+
+								$embed = [ 'url' => esc_url_raw( $embed_data['url'] ) ];
 
 								// check width
-								if ( ! array_key_exists( 'width', $embed_data ) )
-									$copy[$embed_id]['width'] = 0;
+								if ( ! array_key_exists( 'width', $embed_data ) || ! is_scalar( $embed_data['width'] ) )
+									$embed['width'] = 0;
 								else
-									$copy[$embed_id]['width'] = (int) $embed_data['width'];
+									$embed['width'] = (int) $embed_data['width'];
 
 								// check height
-								if ( ! array_key_exists( 'height', $embed_data ) )
-									$copy[$embed_id]['height'] = 0;
+								if ( ! array_key_exists( 'height', $embed_data ) || ! is_scalar( $embed_data['height'] ) )
+									$embed['height'] = 0;
 								else
-									$copy[$embed_id]['height'] = (int) $embed_data['height'];
+									$embed['height'] = (int) $embed_data['height'];
 
 								// check thumbnail url
-								if ( empty( $embed_data['thumbnail_url'] ) )
-									$copy[$embed_id]['thumbnail_url'] = '';
+								if ( ! array_key_exists( 'thumbnail_url', $embed_data ) || ! is_scalar( $embed_data['thumbnail_url'] ) || empty( $embed_data['thumbnail_url'] ) )
+									$embed['thumbnail_url'] = '';
 								else
-									$copy[$embed_id]['thumbnail_url'] = esc_url_raw( $embed_data['thumbnail_url'] );
+									$embed['thumbnail_url'] = esc_url_raw( $embed_data['thumbnail_url'] );
 
 								// check thumbnail width
-								if ( ! array_key_exists( 'thumbnail_width', $embed_data ) )
-									$copy[$embed_id]['thumbnail_width'] = 0;
+								if ( ! array_key_exists( 'thumbnail_width', $embed_data ) || ! is_scalar( $embed_data['thumbnail_width'] ) )
+									$embed['thumbnail_width'] = 0;
 								else
-									$copy[$embed_id]['thumbnail_width'] = (int) $embed_data['thumbnail_width'];
+									$embed['thumbnail_width'] = (int) $embed_data['thumbnail_width'];
 
 								// check thumbnail height
-								if ( ! array_key_exists( 'thumbnail_height', $embed_data ) )
-									$copy[$embed_id]['thumbnail_height'] = 0;
+								if ( ! array_key_exists( 'thumbnail_height', $embed_data ) || ! is_scalar( $embed_data['thumbnail_height'] ) )
+									$embed['thumbnail_height'] = 0;
 								else
-									$copy[$embed_id]['thumbnail_height'] = (int) $embed_data['thumbnail_height'];
+									$embed['thumbnail_height'] = (int) $embed_data['thumbnail_height'];
 
 								// check title
-								if ( empty( $embed_data['title'] ) )
-									$copy[$embed_id]['title'] = '';
+								if ( ! array_key_exists( 'title', $embed_data ) || ! is_scalar( $embed_data['title'] ) || empty( $embed_data['title'] ) )
+									$embed['title'] = '';
 								else
-									$copy[$embed_id]['title'] = trim( sanitize_text_field( $embed_data['title'] ) );
+									$embed['title'] = trim( sanitize_text_field( $embed_data['title'] ) );
 
 								// check caption
-								if ( empty( $embed_data['caption'] ) )
-									$copy[$embed_id]['caption'] = '';
+								if ( ! array_key_exists( 'caption', $embed_data ) || ! is_scalar( $embed_data['caption'] ) || empty( $embed_data['caption'] ) )
+									$embed['caption'] = '';
 								else
-									$copy[$embed_id]['caption'] = trim( sanitize_textarea_field( $embed_data['caption'] ) );
+									$embed['caption'] = trim( sanitize_textarea_field( $embed_data['caption'] ) );
 
 								// check date
-								if ( empty( $embed_data['date'] ) )
-									$copy[$embed_id]['date'] = '';
+								if ( ! array_key_exists( 'date', $embed_data ) || ! is_scalar( $embed_data['date'] ) || empty( $embed_data['date'] ) )
+									$embed['date'] = '';
 								else
-									$copy[$embed_id]['date'] = date( 'Y-m-d H:i:s', strtotime( $embed_data['date'] ) );
+									$embed['date'] = date( 'Y-m-d H:i:s', strtotime( $embed_data['date'] ) );
 
 								// new embed id
 								$new_id = 'e' . $index;
 
 								// add embed data
-								$data['embed'][$new_id] = $copy[$embed_id];
+								$data['embed'][$new_id] = $embed;
 								$data['embed'][$new_id]['id'] = $new_id;
 
 								// add special id
@@ -255,9 +254,9 @@ trait Responsive_Lightbox_Gallery_Sanitize {
 
 
 					// check ids
-					if ( array_key_exists( 'ids', $value ) ) {
+					if ( array_key_exists( 'ids', $value ) && is_scalar( $value['ids'] ) ) {
 						// prepare ids
-						$ids = (string) trim( $value['ids'] );
+						$ids = trim( (string) $value['ids'] );
 
 						if ( $ids !== '' ) {
 							// reindex embed
@@ -271,13 +270,14 @@ trait Responsive_Lightbox_Gallery_Sanitize {
 					}
 
 					// check excluded items
-					if ( array_key_exists( 'exclude', $value ) && is_array( $value['exclude'] ) && ! empty( $value['exclude'] ) ) {
+					if ( array_key_exists( 'exclude', $value ) && is_array( $value['exclude'] ) ) {
+						$exclude = $value['exclude'];
 						// reindex embed
-						if ( ! empty( $reindexed_embed ) )
-							$value['exclude'] = explode( ',', str_replace( array_keys( $reindexed_embed ), array_values( $reindexed_embed ), implode( ',', array_filter( $value['exclude'] ) ) ) );
+						if ( ! empty( $reindexed_embed ) && ! empty( $exclude ) )
+							$exclude = explode( ',', str_replace( array_keys( $reindexed_embed ), array_values( $reindexed_embed ), implode( ',', array_filter( $exclude ) ) ) );
 
 						// get unique and non empty attachment ids only
-						$data['exclude'] = $this->check_attachments( array_unique( array_filter( $value['exclude'] ) ), $atts_args );
+						$data['exclude'] = $this->check_attachments( array_unique( array_filter( $exclude ) ), $atts_args );
 					}
 
 					$value = $data;
@@ -287,14 +287,16 @@ trait Responsive_Lightbox_Gallery_Sanitize {
 
 			case 'media_preview':
 				if ( is_array( $value ) ) {
-					$data = $args['default'];
+					$data = [];
 
 					// check excluded items
-					if ( array_key_exists( 'exclude', $value ) && is_array( $value['exclude'] ) && ! empty( $value['exclude'] ) ) {
+					if ( array_key_exists( 'exclude', $value ) && is_array( $value['exclude'] ) ) {
 						$ids = $strings = [];
 
 						foreach ( $value['exclude'] as $exclude_item ) {
-							$item = trim( $exclude_item );
+							if ( ! is_scalar( $exclude_item ) )
+								continue;
+							$item = trim( (string) $exclude_item );
 
 							if ( is_numeric( $item ) )
 								$ids[] = (int) $item;
@@ -327,8 +329,69 @@ trait Responsive_Lightbox_Gallery_Sanitize {
 	 * @param string $menu_item Gallery menu item
 	 * @return array
 	 */
-	public function sanitize_fields( $items, $data, $tab_id, $menu_item ) {
-		$safedata = [];
+	private function is_valid_gallery_scalar_array( $value ) {
+		if ( ! is_array( $value ) )
+			return false;
+
+		foreach ( $value as $item ) {
+			if ( ! is_scalar( $item ) )
+				return false;
+		}
+
+		return true;
+	}
+
+	private function is_valid_gallery_field_value( $value, $args ) {
+		$type = isset( $args['type'] ) ? $args['type'] : '';
+
+		if ( $type === 'media_library' ) {
+			if ( ! is_array( $value ) || ( array_key_exists( 'ids', $value ) && ! is_scalar( $value['ids'] ) ) || ( array_key_exists( 'exclude', $value ) && ! $this->is_valid_gallery_scalar_array( $value['exclude'] ) ) )
+				return false;
+
+			if ( array_key_exists( 'embed', $value ) ) {
+				if ( ! is_array( $value['embed'] ) )
+					return false;
+				foreach ( $value['embed'] as $embed ) {
+					if ( ! is_array( $embed ) || ! array_key_exists( 'url', $embed ) || ! is_scalar( $embed['url'] ) )
+						return false;
+					foreach ( [ 'width', 'height', 'thumbnail_url', 'thumbnail_width', 'thumbnail_height', 'title', 'caption', 'date' ] as $key ) {
+						if ( array_key_exists( $key, $embed ) && ! is_scalar( $embed[$key] ) )
+							return false;
+					}
+				}
+			}
+
+			return true;
+		}
+
+		if ( $type === 'media_preview' )
+			return is_array( $value ) && ( ! array_key_exists( 'exclude', $value ) || $this->is_valid_gallery_scalar_array( $value['exclude'] ) );
+
+		if ( $type === 'taxonomy' )
+			return is_array( $value ) && ( ! array_key_exists( 'id', $value ) || is_scalar( $value['id'] ) ) && ( ! array_key_exists( 'children', $value ) || is_scalar( $value['children'] ) );
+
+		if ( in_array( $type, [ 'multiselect', 'checkbox' ], true ) )
+			return $this->is_valid_gallery_scalar_array( $value );
+
+		return is_scalar( $value );
+	}
+
+	private function merge_gallery_field_value( $existing, $sanitized, $args ) {
+		$type = isset( $args['type'] ) ? $args['type'] : '';
+		if ( in_array( $type, [ 'media_library', 'media_preview', 'taxonomy' ], true ) && is_array( $existing ) && is_array( $sanitized ) )
+			return array_replace( $existing, $sanitized );
+
+		return $sanitized;
+	}
+
+	public function sanitize_fields( $items, $data, $tab_id, $menu_item, $existing = [], $complete = false ) {
+		$safedata = is_array( $existing ) ? $existing : [];
+		if ( ! isset( $safedata[$tab_id] ) || ! is_array( $safedata[$tab_id] ) )
+			$safedata[$tab_id] = [];
+		if ( ! isset( $safedata[$tab_id][$menu_item] ) || ! is_array( $safedata[$tab_id][$menu_item] ) )
+			$safedata[$tab_id][$menu_item] = [];
+
+		$submitted = isset( $data[$tab_id][$menu_item] ) && is_array( $data[$tab_id][$menu_item] ) ? $data[$tab_id][$menu_item] : [];
 
 		// For config tab in Global mode, determine disabled fields
 		$disabled_fields = [];
@@ -347,11 +410,16 @@ trait Responsive_Lightbox_Gallery_Sanitize {
 			if ( $tab_id === 'config' && $menu_item === 'default' && isset( $disabled_fields[$field] ) )
 				continue;
 
-			// available field?
-			if ( isset( $data[$tab_id], $data[$tab_id][$menu_item], $data[$tab_id][$menu_item][$field] ) )
-				$safedata[$tab_id][$menu_item][$field] = $this->sanitize_field( $field, $data[$tab_id][$menu_item][$field], $item );
+			// Available valid field values are saved, including explicit empty strings and zeroes.
+			if ( array_key_exists( $field, $submitted ) && $this->is_valid_gallery_field_value( $submitted[$field], $item ) ) {
+				$sanitized = $this->sanitize_field( $field, $submitted[$field], $item );
+				if ( $complete && $item['type'] === 'taxonomy' && ! array_key_exists( 'children', $submitted[$field] ) )
+					$sanitized['children'] = false;
+				$existing_value = isset( $safedata[$tab_id][$menu_item][$field] ) ? $safedata[$tab_id][$menu_item][$field] : null;
+				$safedata[$tab_id][$menu_item][$field] = $this->merge_gallery_field_value( $existing_value, $sanitized, $item );
+			}
 			// boolean field?
-			elseif ( $item['type'] === 'boolean' )
+			elseif ( $complete && ! array_key_exists( $field, $submitted ) && $item['type'] === 'boolean' )
 				$safedata[$tab_id][$menu_item][$field] = false;
 			// multiple fields?
 			elseif ( $item['type'] === 'multiple' ) {
@@ -360,19 +428,14 @@ trait Responsive_Lightbox_Gallery_Sanitize {
 					if ( $tab_id === 'config' && $menu_item === 'default' && isset( $disabled_fields[$field] ) )
 						continue;
 
-					// available subfield?
-					if ( isset( $data[$tab_id], $data[$tab_id][$menu_item], $data[$tab_id][$menu_item][$subfield] ) )
-						$safedata[$tab_id][$menu_item][$subfield] = $this->sanitize_field( $subfield, $data[$tab_id][$menu_item][$subfield], $subitem );
+					// Available valid subfield values are saved; malformed rows preserve their prior value.
+					if ( array_key_exists( $subfield, $submitted ) && $this->is_valid_gallery_field_value( $submitted[$subfield], $subitem ) )
+						$safedata[$tab_id][$menu_item][$subfield] = $this->sanitize_field( $subfield, $submitted[$subfield], $subitem );
 					// boolean subfield?
-					elseif ( $subitem['type'] === 'boolean' )
+					elseif ( $complete && ! array_key_exists( $subfield, $submitted ) && $subitem['type'] === 'boolean' )
 						$safedata[$tab_id][$menu_item][$subfield] = false;
-					// any other case
-					else
-						$safedata[$tab_id][$menu_item][$subfield] = $subitem['default'];
 				}
-			// any other case
-			} else
-				$safedata[$tab_id][$menu_item][$field] = $item['default'];
+			}
 		}
 
 		return $safedata;

@@ -108,6 +108,142 @@ class Responsive_Lightbox_Folders {
 	}
 
 	/**
+	 * Get the active attachment folder taxonomy.
+	 *
+	 * @return WP_Taxonomy|false
+	 */
+	private function get_active_folder_taxonomy() {
+		$taxonomy = get_taxonomy( $this->get_active_taxonomy() );
+
+		if ( ! $taxonomy || ! in_array( 'attachment', (array) $taxonomy->object_type, true ) )
+			return false;
+
+		return $taxonomy;
+	}
+
+	/**
+	 * Check the active user's capability to manage a folder term.
+	 *
+	 * The built-in taxonomy intentionally preserves the uploader workflow. Custom
+	 * attachment taxonomies use the capability registered on their taxonomy object.
+	 *
+	 * @param WP_Taxonomy $taxonomy Taxonomy object.
+	 * @param string      $capability Taxonomy capability property.
+	 * @return bool
+	 */
+	private function current_user_can_manage_folder_terms( $taxonomy, $capability ) {
+		if ( $taxonomy->name === 'rl_media_folder' )
+			return current_user_can( 'upload_files' );
+
+		if ( empty( $taxonomy->cap->$capability ) )
+			return false;
+
+		return current_user_can( $taxonomy->cap->$capability );
+	}
+
+	/**
+	 * Check whether a submitted folder term belongs to the active taxonomy.
+	 *
+	 * @param int    $term_id Term ID.
+	 * @param string $taxonomy Taxonomy name.
+	 * @param bool   $allow_root Whether root (zero) is permitted.
+	 * @return bool
+	 */
+	private function is_valid_folder_term( $term_id, $taxonomy, $allow_root = false ) {
+		if ( $allow_root && $term_id === 0 )
+			return true;
+
+		if ( $term_id <= 0 )
+			return false;
+
+		$term = get_term( $term_id, $taxonomy );
+
+		return $term && ! is_wp_error( $term );
+	}
+
+	/**
+	 * Check whether the current user may assign the active folder taxonomy to an attachment.
+	 *
+	 * @param int $attachment_id Attachment ID.
+	 * @param int $term_id       Destination term ID, with zero representing root.
+	 * @return bool
+	 */
+	private function current_user_can_assign_folder_attachment( $attachment_id, $term_id ) {
+		$taxonomy = $this->get_active_taxonomy();
+		$tax = $this->get_active_folder_taxonomy();
+		$attachment = get_post( $attachment_id );
+
+		if ( ! $tax || empty( $tax->cap->assign_terms ) || ! current_user_can( $tax->cap->assign_terms ) )
+			return false;
+
+		if ( ! $attachment || $attachment->post_type !== 'attachment' || ! current_user_can( 'edit_post', $attachment_id ) )
+			return false;
+
+		return $this->is_valid_folder_term( $term_id, $taxonomy, true );
+	}
+
+	/**
+	 * Normalize a submitted folder term ID without treating malformed values as root.
+	 *
+	 * @param mixed $term_id Submitted term ID.
+	 * @param bool  $allow_root Whether the explicit root ID (zero) is valid.
+	 * @return int|false
+	 */
+	private function get_submitted_folder_term_id( $term_id, $allow_root = false ) {
+		if ( ! is_int( $term_id ) && is_string( $term_id ) && ctype_digit( $term_id ) )
+			$term_id = (int) $term_id;
+		elseif ( ! is_int( $term_id ) )
+			return false;
+
+		if ( $term_id < 0 || ( $term_id === 0 && ! $allow_root ) )
+			return false;
+
+		return $term_id;
+	}
+
+	/**
+	 * Normalize the attachment UI's source-folder identifier.
+	 *
+	 * The media library uses -1 only as an "All Files" source sentinel. It is
+	 * never a valid destination or taxonomy term ID.
+	 *
+	 * @param mixed $source_id Submitted source folder ID.
+	 * @return int|false
+	 */
+	private function get_submitted_folder_source_id( $source_id ) {
+		if ( $source_id === -1 || $source_id === '-1' )
+			return -1;
+
+		return $this->get_submitted_folder_term_id( $source_id, true );
+	}
+
+	/**
+	 * Validate the explicit 0/1 child-deletion control.
+	 *
+	 * @param mixed $children Submitted child-deletion value.
+	 * @return int|false
+	 */
+	private function get_submitted_folder_children( $children ) {
+		if ( $children === 0 || $children === '0' )
+			return 0;
+
+		if ( $children === 1 || $children === '1' )
+			return 1;
+
+		return false;
+	}
+
+	/**
+	 * Validate the common folders AJAX nonce without passing malformed input to WordPress.
+	 *
+	 * @param mixed $nonce Submitted nonce.
+	 * @return bool
+	 */
+	private function folders_ajax_nonce_is_valid( $nonce ) {
+		return is_string( $nonce ) && ctype_alnum( $nonce ) && wp_verify_nonce( $nonce, 'rl-folders-ajax-library-nonce' );
+	}
+
+	/**
 	 * Initialize folders.
 	 *
 	 * @return void
@@ -548,15 +684,13 @@ class Responsive_Lightbox_Folders {
 	 */
 	public function add_attachment( $post_id ) {
 		if ( isset( $_POST['rl_folders_upload_files_term_id'] ) ) {
-			// cast term id
-			$term_id = (int) $_POST['rl_folders_upload_files_term_id'];
+			$term_id = $this->get_submitted_folder_term_id( $_POST['rl_folders_upload_files_term_id'], true );
 
-			// get active taxonomy
-			$taxonomy = $this->get_active_taxonomy();
-
-			// valid term?
-			if ( is_array( term_exists( $term_id, $taxonomy ) ) )
+			// Upload assignment must satisfy both the upload workflow and the active taxonomy.
+			if ( $term_id !== false && current_user_can( 'upload_files' ) && $this->current_user_can_assign_folder_attachment( $post_id, $term_id ) && $term_id !== 0 ) {
+				$taxonomy = $this->get_active_taxonomy();
 				wp_set_object_terms( $post_id, $term_id, $taxonomy, false );
+			}
 		}
 	}
 
@@ -751,6 +885,7 @@ class Responsive_Lightbox_Folders {
 						'orderby'			=> 'name',
 						'order'				=> 'asc',
 						'show_option_none'	=> __( 'Root Folder', 'responsive-lightbox' ),
+						'option_none_value'	=> 0,
 						'show_option_all'	=> false,
 						'show_count'		=> false,
 						'hide_empty'		=> false,
@@ -812,7 +947,10 @@ class Responsive_Lightbox_Folders {
 	}
 
 	/**
-	 * Assign new term IDs to given attachment ID via AJAX in modal attachment edit screen.
+	 * Priority-zero compatibility override for WordPress's attachment-modal save action.
+	 *
+	 * This deliberately replaces wp_ajax_save_attachment_compat() while retaining its
+	 * generic error and attachment-data success JSON envelopes for media-frame clients.
 	 *
 	 * @return void
 	 */
@@ -837,13 +975,51 @@ class Responsive_Lightbox_Folders {
 		// check nonce
 		check_ajax_referer( 'update-post_' . $id, 'nonce' );
 
-		if ( ! current_user_can( 'edit_post', $id ) )
+		// get active taxonomy before any attachment mutation.
+		$taxonomy = $this->get_active_taxonomy();
+		$tax = $this->get_active_folder_taxonomy();
+
+		if ( ! $tax || empty( $tax->cap->assign_terms ) || ! current_user_can( $tax->cap->assign_terms ) )
 			wp_send_json_error();
 
 		// get post
 		$post = get_post( $id, ARRAY_A );
 
-		if ( empty( $post ) || $post['post_type'] !== 'attachment' )
+		if ( empty( $post ) || $post['post_type'] !== 'attachment' || ! current_user_can( 'edit_post', $id ) )
+			wp_send_json_error();
+
+		// The modal sends an array while the direct field sends the selected term.
+		// Only an explicit, valid value may change existing folder terms.
+		$term_id = null;
+		$term_submitted = false;
+		$invalid_term = false;
+		if ( isset( $attachment_data[$taxonomy] ) ) {
+			$term_submitted = true;
+			$submitted_terms = $attachment_data[$taxonomy];
+
+			if ( ! is_array( $submitted_terms ) )
+				$invalid_term = true;
+			elseif ( empty( $submitted_terms ) )
+				$term_id = 0;
+			else {
+				$terms = [];
+				foreach ( $submitted_terms as $submitted_term ) {
+					if ( ! is_scalar( $submitted_term ) ) {
+						$invalid_term = true;
+						break;
+					}
+					$terms[] = trim( (string) $submitted_term );
+				}
+
+				if ( ! $invalid_term )
+					$term_id = $this->get_submitted_folder_term_id( $terms[0], true );
+			}
+		} elseif ( isset( $_REQUEST[$taxonomy . '_term'] ) ) {
+			$term_submitted = true;
+			$term_id = $this->get_submitted_folder_term_id( $_REQUEST[$taxonomy . '_term'], true );
+		}
+
+		if ( $invalid_term || ( $term_submitted && ( $term_id === false || ! $this->is_valid_folder_term( $term_id, $taxonomy, true ) ) ) )
 			wp_send_json_error();
 
 		// update attachment data if needed
@@ -855,16 +1031,9 @@ class Responsive_Lightbox_Folders {
 		// update attachment
 		wp_update_post( $post );
 
-		// get active taxonomy
-		$taxonomy = $this->get_active_taxonomy();
-
-		// first if needed?
-		if ( isset( $attachment_data[$taxonomy] ) )
-			wp_set_object_terms( $id, (int) reset( array_map( 'trim', $attachment_data[$taxonomy] ) ), $taxonomy, false );
-		elseif ( isset( $_REQUEST[$taxonomy . '_term'] ) )
-			wp_set_object_terms( $id, (int) $_REQUEST[$taxonomy . '_term'], $taxonomy, false );
-		else
-			wp_set_object_terms( $id, '', $taxonomy, false );
+		// Assign the prevalidated destination after the attachment update succeeds.
+		if ( $term_submitted )
+			wp_set_object_terms( $id, $term_id, $taxonomy, false );
 
 		// check media tags
 		if ( isset( $attachment_data['rl_media_tag'] ) && is_string( $attachment_data['rl_media_tag'] ) ) {
@@ -897,29 +1066,32 @@ class Responsive_Lightbox_Folders {
 	 * @return void
 	 */
 	public function delete_term() {
-		// check rate limiting (30 requests per minute for destructive operations)
-		if ( ! Responsive_Lightbox()->check_rate_limit( 'rl_delete_term', 30, 60 ) ) {
-			wp_send_json_error( __( 'Rate limit exceeded. Please try again later.', 'responsive-lightbox' ) );
-		}
-
 		// no data?
 		if ( ! isset( $_POST['term_id'], $_POST['nonce'], $_POST['children'] ) )
 			wp_send_json_error();
 
 		// invalid nonce?
-		if ( ! ctype_alnum( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'rl-folders-ajax-library-nonce' ) )
+		if ( ! $this->folders_ajax_nonce_is_valid( $_POST['nonce'] ) )
 			wp_send_json_error();
 
-		// sanitize term id
-		$term_id = (int) $_POST['term_id'];
-
-		if ( $term_id <= 0 )
+		$term_id = $this->get_submitted_folder_term_id( $_POST['term_id'] );
+		$remove_children = $this->get_submitted_folder_children( $_POST['children'] );
+		if ( $term_id === false || $remove_children === false )
 			wp_send_json_error();
 
 		// get active taxonomy
 		$taxonomy = $this->get_active_taxonomy();
+		$tax = $this->get_active_folder_taxonomy();
 
-		$remove_children = (int) $_POST['children'];
+		if ( ! $tax || ! $this->current_user_can_manage_folder_terms( $tax, 'delete_terms' ) )
+			wp_send_json_error();
+
+		if ( ! $this->is_valid_folder_term( $term_id, $taxonomy ) )
+			wp_send_json_error();
+
+		// Every request input and target is valid before the rate-limit state write.
+		if ( ! Responsive_Lightbox()->check_rate_limit( 'rl_delete_term', 30, 60 ) )
+			wp_send_json_error( __( 'Rate limit exceeded. Please try again later.', 'responsive-lightbox' ) );
 
 		// delete children?
 		if ( $remove_children === 1 ) {
@@ -954,17 +1126,25 @@ class Responsive_Lightbox_Folders {
 			wp_send_json_error();
 
 		// invalid nonce?
-		if ( ! ctype_alnum( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'rl-folders-ajax-library-nonce' ) )
+		if ( ! $this->folders_ajax_nonce_is_valid( $_POST['nonce'] ) )
 			wp_send_json_error();
 
 		// get active taxonomy
 		$taxonomy = $this->get_active_taxonomy();
+		$tax = $this->get_active_folder_taxonomy();
+		$term_id = $this->get_submitted_folder_term_id( $_POST['term_id'] );
+		$parent_id = $this->get_submitted_folder_term_id( $_POST['parent_id'], true );
+		if ( $term_id === false || $parent_id === false )
+			wp_send_json_error();
 
-		if ( ! $this->is_term_drag_and_drop_enabled() )
-			wp_send_json_error( [ 'message' => __( 'You do not have permission to move folders.', 'responsive-lightbox' ) ] );
+		if ( ! $tax || ! $this->current_user_can_manage_folder_terms( $tax, 'edit_terms' ) )
+			wp_send_json_error();
+
+		if ( ! $this->is_valid_folder_term( $term_id, $taxonomy ) || ! $this->is_valid_folder_term( $parent_id, $taxonomy, true ) )
+			wp_send_json_error();
 
 		// update term
-		$update = wp_update_term( (int) $_POST['term_id'], $taxonomy, [ 'parent' => (int) $_POST['parent_id'] ] );
+		$update = wp_update_term( $term_id, $taxonomy, [ 'parent' => $parent_id ] );
 
 		// error?
 		if ( is_wp_error( $update ) )
@@ -984,16 +1164,28 @@ class Responsive_Lightbox_Folders {
 			wp_send_json_error();
 
 		// invalid nonce?
-		if ( ! ctype_alnum( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'rl-folders-ajax-library-nonce' ) )
+		if ( ! $this->folders_ajax_nonce_is_valid( $_POST['nonce'] ) )
+			wp_send_json_error();
+
+		if ( ! is_string( $_POST['name'] ) )
 			wp_send_json_error();
 
 		// get active taxonomy
 		$taxonomy = $this->get_active_taxonomy();
+		$tax = $this->get_active_folder_taxonomy();
 
 		// prepare data
 		$original_slug = $slug = sanitize_title( $_POST['name'] );
 		$name = sanitize_text_field( $_POST['name'] );
-		$parent_id = (int) $_POST['parent_id'];
+		$parent_id = $this->get_submitted_folder_term_id( $_POST['parent_id'], true );
+		if ( $parent_id === false )
+			wp_send_json_error();
+
+		if ( ! $tax || ! $this->current_user_can_manage_folder_terms( $tax, 'manage_terms' ) )
+			wp_send_json_error();
+
+		if ( ! $this->is_valid_folder_term( $parent_id, $taxonomy, true ) )
+			wp_send_json_error();
 
 		// empty name?
 		if ( $original_slug === '' || $name === '' )
@@ -1062,17 +1254,25 @@ class Responsive_Lightbox_Folders {
 			wp_send_json_error();
 
 		// invalid nonce?
-		if ( ! ctype_alnum( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'rl-folders-ajax-library-nonce' ) )
+		if ( ! $this->folders_ajax_nonce_is_valid( $_POST['nonce'] ) )
 			wp_send_json_error();
 
-		// sanitize term id
-		$term_id = (int) $_POST['term_id'];
+		if ( ! is_string( $_POST['name'] ) )
+			wp_send_json_error();
 
-		if ( $term_id <= 0 )
+		$term_id = $this->get_submitted_folder_term_id( $_POST['term_id'] );
+		if ( $term_id === false )
 			wp_send_json_error();
 
 		// get active taxonomy
 		$taxonomy = $this->get_active_taxonomy();
+		$tax = $this->get_active_folder_taxonomy();
+
+		if ( ! $tax || ! $this->current_user_can_manage_folder_terms( $tax, 'edit_terms' ) )
+			wp_send_json_error();
+
+		if ( ! $this->is_valid_folder_term( $term_id, $taxonomy ) )
+			wp_send_json_error();
 
 		// update term, name is sanitized inside wp_update_term with sanitize_term function
 		$update = wp_update_term( $term_id, $taxonomy, [ 'name' => $_POST['name'] ] );
@@ -1107,40 +1307,65 @@ class Responsive_Lightbox_Folders {
 			wp_send_json_error();
 
 		// invalid nonce?
-		if ( ! ctype_alnum( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'rl-folders-ajax-library-nonce' ) )
+		if ( ! $this->folders_ajax_nonce_is_valid( $_POST['nonce'] ) )
 			wp_send_json_error();
 
 		// not empty attachment ids array?
 		if ( empty( $_POST['attachment_ids'] ) || ! is_array( $_POST['attachment_ids'] ) )
 			wp_send_json_error();
 
+		// get active taxonomy
+		$taxonomy = $this->get_active_taxonomy();
+		$tax = $this->get_active_folder_taxonomy();
+
+		if ( ! $tax || empty( $tax->cap->assign_terms ) || ! current_user_can( $tax->cap->assign_terms ) )
+			wp_send_json_error();
+
 		// prepare data
-		$ids = $all_terms = [];
+		$ids = $all_terms = $object_terms = [];
 		$attachments = [
 			'success'		=> [],
 			'failure'		=> [],
 			'duplicated'	=> []
 		];
 
-		// filter unwanted data
-		$ids = array_unique( array_filter( array_map( 'intval', $_POST['attachment_ids'] ) ) );
-
-		// no ids?
-		if ( empty( $ids ) )
+		// prepare term ids
+		$old_term_id = $this->get_submitted_folder_source_id( $_POST['old_term_id'] );
+		$new_term_id = $this->get_submitted_folder_term_id( $_POST['new_term_id'], true );
+		if ( $old_term_id === false || $new_term_id === false )
 			wp_send_json_error();
 
-		// prepare term ids
-		$old_term_id = (int) $_POST['old_term_id'];
-		$new_term_id = (int) $_POST['new_term_id'];
+		if ( ( $old_term_id !== -1 && ! $this->is_valid_folder_term( $old_term_id, $taxonomy, true ) ) || ! $this->is_valid_folder_term( $new_term_id, $taxonomy, true ) )
+			wp_send_json_error();
 
-		// get active taxonomy
-		$taxonomy = $this->get_active_taxonomy();
+		foreach ( $_POST['attachment_ids'] as $attachment_id ) {
+			$attachment_id = $this->get_submitted_folder_term_id( $attachment_id );
+			if ( $attachment_id === false )
+				wp_send_json_error();
+
+			$attachment = get_post( $attachment_id );
+
+			if ( ! $attachment || $attachment->post_type !== 'attachment' || ! current_user_can( 'edit_post', $attachment_id ) )
+				wp_send_json_error();
+
+			$object_terms[$attachment_id] = wp_get_object_terms( $attachment_id, $taxonomy, [ 'fields' => 'ids' ] );
+
+			if ( is_wp_error( $object_terms[$attachment_id] ) )
+				wp_send_json_error();
+
+			$ids[$attachment_id] = $attachment_id;
+		}
+
+		$ids = array_values( $ids );
+
+		if ( empty( $ids ) )
+			wp_send_json_error();
 
 		// moving to root folder?
 		if ( $new_term_id === 0 ) {
 			foreach ( $ids as $id ) {
 				// get attachment term ids
-				$all_terms[$id] = wp_get_object_terms( $id, $taxonomy, [ 'fields' => 'ids' ] );
+				$all_terms[$id] = $object_terms[$id];
 
 				// remove all terms assigned to attachment
 				if ( ! is_wp_error( wp_set_object_terms( $id, null, $taxonomy, false ) ) )
@@ -1151,7 +1376,7 @@ class Responsive_Lightbox_Folders {
 		} else {
 			foreach ( $ids as $id ) {
 				// get attachment term ids
-				$terms = wp_get_object_terms( $id, $taxonomy, [ 'fields' => 'ids' ] );
+				$terms = $object_terms[$id];
 
 				// got terms?
 				if ( ! is_wp_error( $terms ) ) {
@@ -1193,7 +1418,7 @@ class Responsive_Lightbox_Folders {
 			wp_send_json_error();
 
 		// invalid nonce?
-		if ( ! isset( $_POST['nonce'] ) || ! ctype_alnum( $_POST['nonce'] ) || ! wp_verify_nonce( $_POST['nonce'], 'rl-folders-ajax-library-nonce' ) )
+		if ( ! isset( $_POST['nonce'] ) || ! $this->folders_ajax_nonce_is_valid( $_POST['nonce'] ) )
 			wp_send_json_error();
 
 		// get active taxonomy
@@ -1391,6 +1616,51 @@ class Responsive_Lightbox_Folders {
 			if ( strpos( $matches[0], 'current-cat' ) !== false )
 				return $matches[0] . ' data-jstree=\'{ "selected": true }\'';
 		}
+	}
+
+	/**
+	 * Get the number of root attachments using the legacy filter input contract.
+	 *
+	 * @param string $taxonomy Folder taxonomy name.
+	 * @return int
+	 */
+	public function get_root_folder_count( $taxonomy ) {
+		// Keep the public filter input compatible with the legacy root-ID query.
+		$root_query_args = apply_filters(
+			'rl_root_folder_query_args',
+			[
+				'rl_folders_root'	=> true,
+				'posts_per_page'	=> -1,
+				'post_type'			=> 'attachment',
+				'post_status'		=> 'inherit,private',
+				'fields'			=> 'ids',
+				'no_found_rows'		=> false,
+				'tax_query'			=> [
+					[
+						'relation' => 'AND',
+						[
+							'taxonomy'			=> $taxonomy,
+							'field'				=> 'id',
+							'terms'				=> 0,
+							'include_children'	=> false,
+							'operator'			=> 'NOT EXISTS'
+						]
+					]
+				]
+			]
+		);
+
+		// A filtered no_found_rows query cannot provide an exact found_posts count, so retain
+		// the legacy bounded ID-list query in that case. Otherwise query one ID plus found_posts.
+		if ( ! empty( $root_query_args['no_found_rows'] ) ) {
+			$root_query = new WP_Query( $root_query_args );
+			return (int) $root_query->post_count;
+		}
+
+		$root_query_args['posts_per_page'] = 1;
+		$root_query = new WP_Query( $root_query_args );
+
+		return (int) $root_query->found_posts;
 	}
 
 	/**
@@ -1593,38 +1863,11 @@ class Responsive_Lightbox_Folders {
 				// counters are calculated elsewhere; UI does not currently consume them
 			}
 
-			// root folder query
-			$root_query = new WP_Query(
-				apply_filters(
-					'rl_root_folder_query_args',
-					[
-						'rl_folders_root'	=> true,
-						'posts_per_page'	=> -1,
-						'post_type'			=> 'attachment',
-						'post_status'		=> 'inherit,private',
-						'fields'			=> 'ids',
-						'no_found_rows'		=> false,
-						'tax_query'			=> [
-							[
-								'relation' => 'AND',
-								[
-									'taxonomy'			=> $taxonomy->name,
-									'field'				=> 'id',
-									'terms'				=> 0,
-									'include_children'	=> false,
-									'operator'			=> 'NOT EXISTS'
-								]
-							]
-						]
-					]
-				)
-			);
-
 			// set number of all attachments
 			$counters[-1] = (int) apply_filters( 'rl_count_attachments', 0 );
 
 			// set number of root attachments (not categorized)
-			$counters[0] = (int) $root_query->post_count;
+			$counters[0] = $this->get_root_folder_count( $taxonomy->name );
 
 			$html = '
 			<ul>

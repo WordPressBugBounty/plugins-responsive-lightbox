@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "responsive-lightbox/gallery",
+  "title": "Gallery",
+  "description": "Galleries",
+  "category": "responsive-lightbox",
+  "icon": "format-gallery",
+  "keywords": ["images", "photos", "gallery"],
+  "textdomain": "responsive-lightbox",
+  "editorScript": "responsive-lightbox-block-editor-script",
+  "editorStyle": "responsive-lightbox-block-editor-styles",
+  "attributes": {
+    "imageURL": {
+      "type": "string",
+      "default": ""
+    },
+    "galleryID": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+}

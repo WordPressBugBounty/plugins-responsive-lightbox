@@ -2,10 +2,10 @@
 Contributors: dfactory
 Donate link: http://www.dfactory.co/
 Tags: gallery, galleries, lightbox, image, images
-Requires at least: 6.0
-Tested up to: 7.0
-Stable tag: 2.7.8
-Requires PHP: 7.0
+Requires at least: 6.4
+Tested up to: 7.1
+Stable tag: 2.7.9
+Requires PHP: 7.4
 License: MIT License
 License URI: http://opensource.org/licenses/MIT
 
@@ -139,6 +139,15 @@ Responsive Lightbox and Gallery plugin comes with many styles and effects alread
 2. screenshot-2.jpg
 
 == Changelog ==
+
+= 2.7.9 =
+* Security: Harden authorization, rate limiting, and sanitization across Media Folders, Remote Library, gallery visibility, and gallery save paths
+* Fix: Correct URL rewriting and malformed attachment taxonomy handling
+* Fix: Improve attachment cache freshness so folder counts and visibility stay correct
+* Fix: Preserve unrelated gallery metadata when partial or malformed tab payloads are saved
+* Fix: Correct activation flush timing and opt-in cleanup
+* Fix: Scope gallery editor tab navigation to the gallery editor
+* Tweak: Improve WordPress 7.1 source compatibility for block registration and editor assets
 
 = 2.7.8 =
 * New: Add AVIF support across core galleries, built-in lightboxes, and Remote Library workflows
@@ -636,5 +645,5 @@ Initial release
 
 == Upgrade Notice ==
 
-= 2.7.8 =
-Adds AVIF support across core gallery and lightbox flows, plus fixes Media Library toolbar and modal regressions.
+= 2.7.9 =
+Security hardening for Media Folders, Remote Library, gallery visibility, and gallery save paths, plus fixes for URL rewriting, attachment cache freshness, gallery metadata saves, activation cleanup, and the gallery editor. Improves WordPress 7.1 compatibility and raises minimum requirements to WordPress 6.4 / PHP 7.4.

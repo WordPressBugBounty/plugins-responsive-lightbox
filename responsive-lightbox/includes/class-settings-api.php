@@ -26,6 +26,7 @@ class Responsive_Lightbox_Settings_API {
 	private $plugin_url = '';
 	private $object;
 	private $nested = false;
+	private $registered_settings = [];
 
 	/**
 	 * Class constructor.
@@ -596,13 +597,18 @@ class Responsive_Lightbox_Settings_API {
 
 		// check settings
 		foreach ( $this->settings as $setting_id => $setting ) {
+			if ( ! is_array( $setting ) || ! array_key_exists( 'option_name', $setting ) ) {
+				$this->record_unbound_setting( $setting_id );
+				continue;
+			}
+
 			// tabs?
 			if ( is_array( $setting['option_name'] ) ) {
 				foreach ( $setting['option_name'] as $tab => $option_name ) {
-					$this->register_setting_fields( $tab, $setting, $option_name );
+					$this->register_setting_fields( $tab, $setting, $option_name, $setting_id );
 				}
 			} else {
-				$this->register_setting_fields( $setting_id, $setting );
+				$this->register_setting_fields( $setting_id, $setting, '', $setting_id );
 			}
 		}
 	}
@@ -615,15 +621,42 @@ class Responsive_Lightbox_Settings_API {
 	 * @param string $option_name Option name override.
 	 * @return void
 	 */
-	public function register_setting_fields( $setting_id, $setting, $option_name = '' ) {
+	public function register_setting_fields( $setting_id, $setting, $option_name = '', $setting_key = '' ) {
 		if ( empty( $option_name ) )
-			$option_name = $setting['option_name'];
+			$option_name = isset( $setting['option_name'] ) ? $setting['option_name'] : '';
+
+		if ( ! is_string( $setting_id ) || $setting_id === '' || ! is_string( $option_name ) || $option_name === '' ) {
+			$this->record_unbound_setting( is_string( $option_name ) ? $option_name : $setting_id );
+			return;
+		}
+
+		if ( $setting_key === '' )
+			$setting_key = $setting_id;
+
+		$option_group = ! empty( $setting['option_group'] ) && is_string( $setting['option_group'] ) ? $setting['option_group'] : $option_name;
+		if ( $option_group === '' ) {
+			$this->record_unbound_setting( $option_name );
+			return;
+		}
+
+		$this->registered_settings[$option_name] = [
+			'setting_id' => $setting_id,
+			'setting_key' => $setting_key,
+			'option_group' => $option_group,
+			'validate' => ! empty( $setting['validate'] ) ? $setting['validate'] : null,
+		];
 
 		// add capability filter for option page (matches legacy behavior)
 		add_filter( 'option_page_capability_' . $option_name, [ $this, 'manage_options_capability' ] );
+		if ( $option_group !== $option_name )
+			add_filter( 'option_page_capability_' . $option_group, [ $this, 'manage_options_capability' ] );
 
-		// register setting
-		register_setting( $option_name, $option_name, ! empty( $setting['validate'] ) ? $setting['validate'] : [ $this, 'validate_settings' ] );
+		// Register an option-bound wrapper so both fallback and custom validators are
+		// authorized against the option Settings API is actually updating.
+		$sanitize_callback = function ( $input ) use ( $option_name ) {
+			return $this->validate_registered_setting( $input, $option_name );
+		};
+		register_setting( $option_group, $option_name, $sanitize_callback );
 
 		// register setting sections
 		if ( ! empty( $setting['sections'] ) ) {
@@ -1371,76 +1404,121 @@ class Responsive_Lightbox_Settings_API {
 	 * @return array Validated data.
 	 */
 	public function validate_settings( $input ) {
-		// check capability
-		if ( ! current_user_can( 'manage_options' ) )
-			return $input;
-
-		// check option page
-		if ( empty( $_POST['option_page'] ) )
-			return $input;
-
-		// try to get setting name and ID
-		foreach ( $this->settings as $id => $setting ) {
-			// tabs?
-			if ( is_array( $setting['option_name'] ) ) {
-				foreach ( $setting['option_name'] as $tab => $option_name ) {
-					// found valid setting?
-					if ( $option_name === $_POST['option_page'] ) {
-						$setting_id = $tab;
-						$setting_name = $option_name;
-						$setting_key = $id;
-						break 2;
-					}
-				}
-			} else {
-				// found valid setting?
-				if ( $setting['option_name'] === $_POST['option_page'] ) {
-					$setting_key = $setting_id = $id;
-					$setting_name = $setting['option_name'];
-					break;
-				}
-			}
+		$option_group = isset( $_POST['option_page'] ) && is_string( $_POST['option_page'] ) ? wp_unslash( $_POST['option_page'] ) : '';
+		foreach ( $this->registered_settings as $option_name => $setting ) {
+			if ( $setting['option_group'] === $option_group )
+				return $this->validate_registered_setting( $input, $option_name );
 		}
 
-		// check setting id
-		if ( empty( $setting_id ) )
+		$this->record_unbound_setting( $option_group );
+		return $input;
+	}
+
+	/**
+	 * Validate a sanitizer invocation bound to a registered option.
+	 *
+	 * @param mixed  $input Submitted option value.
+	 * @param string $option_name Registered option name.
+	 * @return mixed Validated or preserved option value.
+	 */
+	public function validate_registered_setting( $input, $option_name ) {
+		if ( empty( $this->registered_settings[$option_name] ) ) {
+			$this->record_unbound_setting( $option_name );
 			return $input;
+		}
 
-		// save settings
-		if ( isset( $_POST['save_' . $setting_name] ) ) {
-			$input = $this->validate_input_settings( $setting_id, $setting_key, $input );
+		$setting = $this->registered_settings[$option_name];
+		$stored = get_option( $option_name );
+		$is_settings_request = array_key_exists( 'option_page', $_POST );
+		$option_group = $is_settings_request && is_string( $_POST['option_page'] ) ? wp_unslash( $_POST['option_page'] ) : '';
 
-			add_settings_error( $setting_name, 'settings_saved', __( 'Settings saved.', 'responsive-lightbox' ), 'updated' );
-		// reset settings
-		} elseif ( isset( $_POST['reset_' . $setting_name] ) ) {
-			// get default values
+
+		if ( $is_settings_request ) {
+			$capability = $option_group === $setting['option_group'] ? $this->option_page_capability( $option_group ) : false;
+			if ( $capability === false || ! current_user_can( $capability ) )
+				return $stored;
+		}
+
+		if ( ! is_array( $input ) )
+			return $stored;
+
+		if ( ! empty( $setting['validate'] ) ) {
+			if ( $this->callback_function_exists( $setting['validate'] ) )
+				return call_user_func( $setting['validate'], $input );
+
+			$this->record_unbound_setting( $option_name );
+			return $stored;
+		}
+
+		return $this->validate_fallback_setting( $input, $option_name, $setting );
+	}
+
+	/**
+	 * Validate a registered setting that has no custom callback.
+	 *
+	 * @param array  $input Submitted option value.
+	 * @param string $option_name Registered option name.
+	 * @param array  $setting Registration data.
+	 * @return array Validated option value.
+	 */
+	private function validate_fallback_setting( $input, $option_name, $setting ) {
+		$setting_id = $setting['setting_id'];
+		$setting_key = $setting['setting_key'];
+
+		if ( isset( $_POST['reset_' . $option_name] ) ) {
 			$input = $this->object->defaults[$setting_id];
 
-			// check custom reset functions
 			if ( ! empty( $this->settings[$setting_key]['fields'] ) ) {
 				foreach ( $this->settings[$setting_key]['fields'] as $field_id => $field ) {
-					// skip invalid tab field if any
 					if ( ! empty( $field['tab'] ) && $field['tab'] !== $setting_id )
 						continue;
 
-					// custom reset function?
-					if ( ! empty( $field['reset'] ) ) {
-						if ( $this->callback_function_exists( $field['reset'] ) ) {
-							if ( $field['type'] === 'custom' )
-								$input = call_user_func( $field['reset'], $input, $field );
-							else
-								$input[$field_id] = call_user_func( $field['reset'], $input[$field_id], $field );
-						}
+					if ( ! empty( $field['reset'] ) && $this->callback_function_exists( $field['reset'] ) ) {
+						if ( $field['type'] === 'custom' )
+							$input = call_user_func( $field['reset'], $input, $field );
+						else
+							$input[$field_id] = call_user_func( $field['reset'], $input[$field_id], $field );
 					}
 				}
 			}
 
-			add_settings_error( $setting_name, 'settings_restored', __( 'Settings restored to defaults.', 'responsive-lightbox' ), 'updated' );
+			add_settings_error( $option_name, 'settings_restored', __( 'Settings restored to defaults.', 'responsive-lightbox' ), 'updated' );
+		} else {
+			$input = $this->validate_input_settings( $setting_id, $setting_key, $input );
+
+			if ( isset( $_POST['save_' . $option_name] ) )
+				add_settings_error( $option_name, 'settings_saved', __( 'Settings saved.', 'responsive-lightbox' ), 'updated' );
 		}
 
 		do_action( $this->prefix . '_configuration_updated', 'settings', $input );
 
 		return $input;
+	}
+
+	/**
+	 * Record a rejected registration or sanitizer dispatch without guessing an option.
+	 *
+	 * @param string $option_name Unbound option name or registration identifier.
+	 * @return void
+	 */
+	private function record_unbound_setting( $option_name ) {
+		_doing_it_wrong( __METHOD__, sprintf( 'The settings option "%s" is not registered.', is_scalar( $option_name ) ? $option_name : '' ), '2.7.2' );
+		do_action( $this->prefix . '_settings_unbound_registration', $option_name );
+	}
+
+	/**
+	 * Resolve the capability used by options.php for a registered option group.
+	 *
+	 * @param string $option_group Registered Settings API option group.
+	 * @return string|false
+	 */
+	private function option_page_capability( $option_group ) {
+		$capability = apply_filters( 'option_page_capability_' . $option_group, 'manage_options' );
+		if ( ! is_scalar( $capability ) )
+			return false;
+
+		$capability = (string) $capability;
+		return $capability !== '' ? $capability : false;
 	}
 
 	/**
@@ -1531,20 +1609,11 @@ class Responsive_Lightbox_Settings_API {
 	/**
 	 * Check whether callback is a valid function.
 	 *
-	 * @param string|array $callback Callback to check.
+	 * @param callable|mixed $callback Callback to check.
 	 * @return bool Whether callback exists.
 	 */
 	public function callback_function_exists( $callback ) {
-		if ( is_array( $callback ) ) {
-			list( $object, $function ) = $callback;
-			$function_exists = method_exists( $object, $function );
-		} elseif ( is_string( $callback ) ) {
-			$function_exists = function_exists( $callback );
-		} else {
-			$function_exists = false;
-		}
-
-		return $function_exists;
+		return is_callable( $callback );
 	}
 
 	/**
@@ -1574,7 +1643,8 @@ class Responsive_Lightbox_Settings_API {
 	public function manage_options_capability() {
 		$rl = Responsive_Lightbox();
 
-		return $rl->options['capabilities']['active'] ? 'edit_lightbox_settings' : 'manage_options';
+		$capability = $rl->options['capabilities']['active'] ? 'edit_lightbox_settings' : 'manage_options';
+		return apply_filters( 'rl_lightbox_settings_capability', $capability );
 	}
 }
 

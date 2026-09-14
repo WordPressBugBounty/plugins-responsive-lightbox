@@ -29,6 +29,9 @@ class Responsive_Lightbox_Galleries {
 	private $gallery_args;
 	private $menu_item;
 	private $revision_id;
+	private $preview_revision_id;
+	const PREVIEW_SNAPSHOT_TTL = 900;
+	const PREVIEW_SNAPSHOTS_OPTION = 'responsive_lightbox_gallery_preview_snapshots';
 	private $allowed_select_html = [
 		'select'	=> [
 			'name'				=> true,
@@ -65,6 +68,7 @@ class Responsive_Lightbox_Galleries {
 
 		// actions
 		add_action( 'init', array( $this, 'init' ), 11 );
+		add_action( 'init', array( $this, 'sweep_expired_preview_snapshots' ), 20 );
 		add_action( 'admin_init', array( $this, 'init_admin' ) );
 		add_action( 'current_screen', array( $this, 'clear_metaboxes' ) );
 		add_action( 'edit_form_after_title', array( $this, 'after_title_nav_menu' ) );
@@ -73,6 +77,8 @@ class Responsive_Lightbox_Galleries {
 		add_action( 'media_buttons', array( $this, 'add_gallery_button' ) );
 		add_action( 'add_meta_boxes_rl_gallery', array( $this, 'add_meta_boxes' ) );
 		add_action( 'save_post_rl_gallery', array( $this, 'save_post' ), 10, 3 );
+		add_action( 'save_post_rl_gallery', array( $this, 'clear_preview_snapshots_for_saved_gallery' ), 9, 3 );
+		add_action( 'before_delete_post', array( $this, 'clear_preview_snapshots_for_deleted_gallery' ), 10, 2 );
 		add_action( 'manage_rl_gallery_posts_custom_column', array( $this, 'gallery_columns_content' ), 10, 2 );
 		add_action( 'admin_action_duplicate_gallery', array( $this, 'duplicate_gallery' ) );
 		add_action( 'wp_ajax_rl-get-menu-content', array( $this, 'get_menu_content' ) );
@@ -321,16 +327,113 @@ class Responsive_Lightbox_Galleries {
 	}
 
 	/**
+	 * Check whether the current request may render a gallery.
+	 *
+	 * @param int $gallery_id Gallery post ID.
+	 * @param string $context Rendering context.
+	 * @return bool
+	 */
+	public function can_render_gallery( $gallery_id, $context = 'frontend' ) {
+		$gallery_id = (int) $gallery_id;
+		$gallery = get_post( $gallery_id );
+
+		if ( ! is_object( $gallery ) || $gallery->post_type !== 'rl_gallery' || $gallery->post_status === 'trash' )
+			return false;
+
+		// A signed preview URL or editor capability never replaces WordPress's
+		// password-cookie access check. Apply it before every render context.
+		if ( post_password_required( $gallery ) )
+			return false;
+
+		if ( $context === 'editor_preview' ) {
+			if ( ! current_user_can( 'edit_post', $gallery_id ) )
+				return false;
+
+			return $gallery->post_status !== 'private' || current_user_can( 'read_post', $gallery_id );
+		}
+
+		if ( $gallery->post_status === 'auto-draft' )
+			return false;
+
+		if ( $context === 'preview' || $context === 'pagination_preview' )
+			return current_user_can( 'edit_post', $gallery_id ) && $this->gallery_preview_request_is_valid( $gallery_id, $context === 'pagination_preview' );
+
+		if ( $gallery->post_status === 'publish' )
+			return true;
+
+		if ( $gallery->post_status === 'private' )
+			return current_user_can( 'read_post', $gallery_id );
+
+		return false;
+	}
+
+	/**
+	 * Validate the signed WordPress preview request and its gallery revision.
+	 *
+	 * AJAX pagination retains the original signed preview URL in its same-origin
+	 * referrer because the historical request contract does not submit those
+	 * query arguments again.
+	 *
+	 * @param int $gallery_id Gallery post ID.
+	 * @param bool $from_referer Whether to read preview data from the referrer.
+	 * @return bool
+	 */
+	private function gallery_preview_request_is_valid( $gallery_id, $from_referer = false ) {
+		$request = $_GET;
+
+		if ( $from_referer ) {
+			$referer = isset( $_SERVER['HTTP_REFERER'] ) && is_string( $_SERVER['HTTP_REFERER'] ) ? $_SERVER['HTTP_REFERER'] : '';
+			$site_origin = wp_parse_url( home_url( '/' ) );
+			$referer_origin = is_string( $referer ) ? wp_parse_url( $referer ) : false;
+			$request = [];
+
+			if ( ! is_array( $site_origin ) || ! is_array( $referer_origin ) || empty( $site_origin['scheme'] ) || empty( $site_origin['host'] ) || empty( $referer_origin['scheme'] ) || empty( $referer_origin['host'] ) )
+				return false;
+
+			$site_scheme = strtolower( $site_origin['scheme'] );
+			$site_host = strtolower( $site_origin['host'] );
+			$site_port = isset( $site_origin['port'] ) ? (int) $site_origin['port'] : ( $site_scheme === 'https' ? 443 : 80 );
+			$referer_scheme = strtolower( $referer_origin['scheme'] );
+			$referer_host = strtolower( $referer_origin['host'] );
+			$referer_port = isset( $referer_origin['port'] ) ? (int) $referer_origin['port'] : ( $referer_scheme === 'https' ? 443 : 80 );
+
+			if ( $site_scheme !== $referer_scheme || $site_host !== $referer_host || $site_port !== $referer_port || empty( $referer_origin['query'] ) )
+				return false;
+
+			wp_parse_str( $referer_origin['query'], $request );
+		} elseif ( ! is_preview() )
+			return false;
+
+		if ( ! isset( $request['preview'], $request['preview_nonce'], $request['rl_gallery_revision_id'] ) || $request['preview'] !== 'true' )
+			return false;
+
+		$revision_id = (int) $request['rl_gallery_revision_id'];
+		$nonce = is_string( $request['preview_nonce'] ) ? sanitize_text_field( wp_unslash( $request['preview_nonce'] ) ) : '';
+
+		if ( $revision_id <= 0 || wp_is_post_revision( $revision_id ) !== (int) $gallery_id || $nonce === '' || ! wp_verify_nonce( $nonce, 'post_preview_' . $gallery_id ) )
+			return false;
+
+		$user_id = get_current_user_id();
+		if ( $user_id <= 0 )
+			return false;
+
+		if ( $from_referer ) {
+			if ( ! $this->preview_snapshot_is_valid( $gallery_id, $revision_id, $user_id, $nonce ) )
+				return false;
+			$this->preview_revision_id = $revision_id;
+		} elseif ( $this->remember_preview_snapshot( $gallery_id, $revision_id, $user_id, $nonce ) )
+			$this->preview_revision_id = $revision_id;
+
+		return true;
+	}
+
+	/**
 	 * Add a gallery shortcode.
 	 *
 	 * @param array $args Shortcode arguments
 	 * @return string
 	 */
 	public function gallery_shortcode( $args ) {
-		// enable only for frontend previews
-		if ( ! is_admin() && is_preview() )
-			add_filter( 'get_post_metadata', array( $this, 'filter_preview_metadata' ), 10, 4 );
-
 		// prepare defaults
 		$defaults = [ 'id' => 0 ];
 
@@ -340,22 +443,22 @@ class Responsive_Lightbox_Galleries {
 		// parse id
 		$args['id'] = (int) $args['id'];
 
-		// is it gallery?
-		if ( get_post_type( $args['id'] ) !== 'rl_gallery' )
+		$preview = isset( $args['preview'] ) ? ( $args['preview'] === true || $args['preview'] === 'true' || $args['preview'] === 1 || $args['preview'] === '1' ) : ( isset( $_GET['rl_gallery_revision_id'], $_GET['preview'] ) && $_GET['preview'] === 'true' );
+		$context = isset( $args['access_context'] ) ? sanitize_key( $args['access_context'] ) : ( $preview ? 'preview' : 'frontend' );
+
+		if ( ! in_array( $context, [ 'frontend', 'preview', 'pagination_preview' ], true ) || ! $this->can_render_gallery( $args['id'], $context ) )
 			return '';
 
-		// private gallery?
-		if ( get_post_status( $args['id'] ) === 'private' && ! current_user_can( 'read_private_posts' ) )
-			return '';
+		// The preceding access check binds this request to a signed revision snapshot.
+		// Keep the revision metadata available only for this authorized render, including
+		// WP_ADMIN admin-ajax pagination requests.
+		$filter_preview_metadata = ( $context === 'preview' || $context === 'pagination_preview' );
+		if ( $filter_preview_metadata )
+			add_filter( 'get_post_metadata', array( $this, 'filter_preview_metadata' ), 10, 4 );
 
+		try {
 		$images_args = [ 'exclude' => true ];
-
-		if ( isset( $args['preview'] ) )
-			$images_args['preview'] = (bool) $args['preview'];
-		elseif( isset( $_GET['rl_gallery_revision_id'], $_GET['preview'] ) && $_GET['preview'] === 'true' )
-			$images_args['preview'] = true;
-		else
-			$images_args['preview'] = false;
+		$images_args['preview'] = $preview;
 
 		// get images
 		$images = $this->get_gallery_images( $args['id'], $images_args );
@@ -540,6 +643,10 @@ if ( ! isset( $gallery_fields ) && ! empty( $gallery_type ) )
 			$content = $rl->frontend->add_lightbox( $content );
 
 		return $content;
+		} finally {
+			if ( $filter_preview_metadata )
+				remove_filter( 'get_post_metadata', array( $this, 'filter_preview_metadata' ), 10 );
+		}
 	}
 
 	/**
@@ -1437,14 +1544,58 @@ if ( ! isset( $gallery_fields ) && ! empty( $gallery_type ) )
 	 * @param bool $update Whether existing post is being updated or not
 	 * @return void
 	 */
+	private function gallery_save_request_is_valid( $post_id, $post ) {
+		if ( ! is_object( $post ) || $post->post_type !== 'rl_gallery' || ! isset( $_POST['rl_gallery'] ) || ! is_array( $_POST['rl_gallery'] ) )
+			return false;
+
+		if ( empty( $_POST['post_ID'] ) || (int) $_POST['post_ID'] !== (int) $post_id || empty( $_POST['post_type'] ) || sanitize_key( $_POST['post_type'] ) !== 'rl_gallery' )
+			return false;
+
+		if ( empty( $_POST['_wpnonce'] ) || ! is_string( $_POST['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) ), 'update-post_' . $post_id ) )
+			return false;
+
+		return current_user_can( 'edit_post', $post_id );
+	}
+
+	private function get_gallery_submission_state( $post_data, $tab_id, $menu_item, $items ) {
+		if ( isset( $post_data['rl_gallery_submission'][$tab_id][$menu_item] ) && is_scalar( $post_data['rl_gallery_submission'][$tab_id][$menu_item] ) ) {
+			$state = sanitize_key( $post_data['rl_gallery_submission'][$tab_id][$menu_item] );
+			if ( in_array( $state, [ 'complete', 'partial' ], true ) && isset( $post_data['rl_gallery'][$tab_id][$menu_item] ) && is_array( $post_data['rl_gallery'][$tab_id][$menu_item] ) )
+				return $state;
+
+			// A marker cannot make a malformed menu payload safe to merge as an empty submission.
+			if ( in_array( $state, [ 'complete', 'partial' ], true ) )
+				return '';
+		}
+
+		// Legacy editor forms have no marker. Accept only a provably complete schema shape.
+		if ( ! isset( $post_data['rl_gallery'][$tab_id][$menu_item] ) || ! is_array( $post_data['rl_gallery'][$tab_id][$menu_item] ) )
+			return '';
+
+		$submitted = $post_data['rl_gallery'][$tab_id][$menu_item];
+		foreach ( $items as $field => $item ) {
+			if ( ! is_array( $item ) || empty( $item['type'] ) || ( isset( $item['save'] ) && ! $item['save'] ) )
+				continue;
+			if ( in_array( $item['type'], [ 'notice', 'custom' ], true ) || ! empty( $item['disabled'] ) )
+				continue;
+			if ( $item['type'] === 'multiple' && ! empty( $item['fields'] ) ) {
+				foreach ( $item['fields'] as $subfield => $subitem ) {
+					if ( is_array( $subitem ) && empty( $subitem['disabled'] ) && ! array_key_exists( $subfield, $submitted ) )
+						return '';
+				}
+			} elseif ( ! array_key_exists( $field, $submitted ) )
+				return '';
+		}
+
+		return 'complete';
+	}
+
 	public function save_post( $post_id, $post, $update ) {
-		// check action
 		$action = isset( $_GET['action'] ) ? sanitize_key( $_GET['action'] ) : '';
 
-		if ( wp_is_post_revision( $post_id ) || ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || ! $update || in_array( $post->post_status, array( 'trash', 'auto-draft' ), true ) || ( $action === 'untrash' ) || empty( $_POST['rl_gallery'] ) )
+		if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) || ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || ! $update || in_array( $post->post_status, array( 'trash', 'auto-draft' ), true ) || $action === 'untrash' || ! $this->gallery_save_request_is_valid( $post_id, $post ) )
 			return;
 
-		// save gallery
 		$this->save_gallery( wp_unslash( $_POST ), $post_id );
 	}
 
@@ -1457,7 +1608,10 @@ if ( ! isset( $gallery_fields ) && ! empty( $gallery_type ) )
 	 * @return void
 	 */
 	public function save_gallery( $post_data, $post_id, $preview = false ) {
-		// get gallery data
+		// Trusted callers may use this reusable method directly; request validation belongs in save_post()/save_revision().
+		if ( ! is_array( $post_data ) || ! isset( $post_data['rl_gallery'] ) || ! is_array( $post_data['rl_gallery'] ) )
+			return;
+
 		$data = $post_data['rl_gallery'];
 
 		// prepare sanitized data
@@ -1466,8 +1620,13 @@ if ( ! isset( $gallery_fields ) && ! empty( $gallery_type ) )
 		// get main instance
 		$rl = Responsive_Lightbox();
 
-		// sanitize all fields - iterate from $this->tabs (authoritative registry) to prevent silent skipping
+		$saved_tabs = [];
+
+		// Sanitize only submitted, valid tabs. Omitted and malformed tabs retain their stored metadata.
 		foreach ( array_keys( $this->tabs ) as $tab_id ) {
+			if ( ! isset( $data[$tab_id] ) || ! is_array( $data[$tab_id] ) )
+				continue;
+
 			// Retrieve menu_items from $this->fields for this tab (may be empty for adapter-only tabs)
 			$menu_items = isset( $this->fields[$tab_id] ) ? $this->fields[$tab_id] : [];
 
@@ -1475,22 +1634,10 @@ if ( ! isset( $gallery_fields ) && ! empty( $gallery_type ) )
 			$tab_menu_items = isset( $this->tabs[$tab_id]['menu_items'] ) && is_array( $this->tabs[$tab_id]['menu_items'] ) ? $this->tabs[$tab_id]['menu_items'] : [];
 			$posted_menu_item = isset( $data[$tab_id], $data[$tab_id]['menu_item'] ) ? sanitize_key( $data[$tab_id]['menu_item'] ) : '';
 
-			// Resolve menu item safely for tabs with and without menu navigation.
-			if ( $posted_menu_item !== '' ) {
-				if ( ! empty( $tab_menu_items ) && array_key_exists( $posted_menu_item, $tab_menu_items ) )
-					$menu_item = $posted_menu_item;
-				elseif ( array_key_exists( $posted_menu_item, $menu_items ) )
-					$menu_item = $posted_menu_item;
-				else {
-					if ( empty( $menu_items ) )
-						continue;
-					$menu_item = array_key_exists( 'options', $menu_items ) ? 'options' : key( $menu_items );
-				}
-			} else {
-				if ( empty( $menu_items ) )
-					continue;
-				$menu_item = array_key_exists( 'options', $menu_items ) ? 'options' : key( $menu_items );
-			}
+			// A missing or invalid menu selection is malformed input, never a request to synthesize defaults.
+			if ( $posted_menu_item === '' || ( ! empty( $tab_menu_items ) && ! array_key_exists( $posted_menu_item, $tab_menu_items ) ) || ( empty( $tab_menu_items ) && ! array_key_exists( $posted_menu_item, $menu_items ) ) )
+				continue;
+			$menu_item = $posted_menu_item;
 
 			// Resolve fields from adapter (single source for managed tabs)
 			$items = [];
@@ -1506,27 +1653,14 @@ if ( ! isset( $gallery_fields ) && ! empty( $gallery_type ) )
 			if ( empty( $items ) || ! is_array( $items ) )
 				continue;
 
-			// IMAGES TAB: Minimal defensive guards (sanitizer handles data structure)
-			if ( $tab_id === 'images' ) {
-				// Ensure folder field has valid structure for folders menu item
-				if ( $menu_item === 'folders' && isset( $data[$tab_id][$menu_item]['folder'] ) ) {
-					$folder = $data[$tab_id][$menu_item]['folder'];
-					if ( ! is_array( $folder ) ) {
-						$data[$tab_id][$menu_item]['folder'] = [ 'id' => 0, 'children' => false ];
-					} else {
-						if ( ! isset( $folder['id'] ) ) {
-							$data[$tab_id][$menu_item]['folder']['id'] = 0;
-						}
-						if ( ! isset( $folder['children'] ) ) {
-							$data[$tab_id][$menu_item]['folder']['children'] = false;
-						}
-					}
-				}
-				// Note: attachments['ids'] is CSV string, sanitizer handles it at line 1997
-			}
+			$submission_state = $this->get_gallery_submission_state( $post_data, $tab_id, $menu_item, $items );
+			if ( $submission_state === '' )
+				continue;
+
+			$existing = [ $tab_id => get_post_meta( $post_id, '_rl_' . $tab_id, true ) ];
 
 			// sanitize fields
-			$safedata = $this->sanitize_fields( $items, $data, $tab_id, $menu_item );
+			$safedata = $this->sanitize_fields( $items, $data, $tab_id, $menu_item, $existing, $submission_state === 'complete' );
 
 			// tab validation hook (adapter-managed tabs)
 			if ( isset( $rl->gallery_api ) && $rl->gallery_api->is_managed_tab( $tab_id ) ) {
@@ -1542,6 +1676,7 @@ if ( ! isset( $gallery_fields ) && ! empty( $gallery_type ) )
 
 			// add menu item
 			$safedata[$tab_id]['menu_item'] = $menu_item;
+			$saved_tabs[$tab_id] = $safedata[$tab_id];
 
 			// preview?
 			if ( $preview )
@@ -1552,67 +1687,69 @@ if ( ! isset( $gallery_fields ) && ! empty( $gallery_type ) )
 
 		$has_featured_image_payload = isset( $post_data['rl_gallery_featured_image'] );
 
-		// Preserve existing featured-image metadata for partial updates (e.g. Quick Edit).
-		if ( ! $has_featured_image_payload ) {
-			$featured_image_type = get_post_meta( $post_id, '_rl_featured_image_type', true );
-			$featured_image = get_post_meta( $post_id, '_rl_featured_image', true );
-			$thumbnail_id = (int) get_post_meta( $post_id, '_thumbnail_id', true );
+		// Absent featured-image controls are a partial save and must not rewrite any of their metadata.
+		if ( $has_featured_image_payload ) {
+			$featured_image_type = $post_data['rl_gallery_featured_image'];
+			$update_featured_image = is_string( $featured_image_type ) && in_array( $featured_image_type, array( 'id', 'url', 'image' ), true );
 
-			if ( ! in_array( $featured_image_type, [ 'id', 'url', 'image' ], true ) )
-				$featured_image_type = 'image';
-		} else {
-			$featured_image_type = ! empty( $post_data['rl_gallery_featured_image'] ) && in_array( $post_data['rl_gallery_featured_image'], array( 'id', 'url', 'image' ), true ) ? $post_data['rl_gallery_featured_image'] : 'id';
+			if ( $update_featured_image ) {
+				switch ( $featured_image_type ) {
+					// custom URL
+					case 'url':
+						$frontend = function_exists( 'Responsive_Lightbox' ) ? Responsive_Lightbox()->frontend : null;
+						$custom_url = isset( $post_data['_rl_thumbnail_url'] ) && is_string( $post_data['_rl_thumbnail_url'] ) ? $post_data['_rl_thumbnail_url'] : '';
+						$featured_image = $frontend && method_exists( $frontend, 'sanitize_remote_image_url' ) ? $frontend->sanitize_remote_image_url( $custom_url ) : '';
+						if ( ! is_string( $featured_image ) || $featured_image === '' ) {
+							$update_featured_image = false;
+							break;
+						}
+						$thumbnail_id = $this->maybe_generate_thumbnail();
+						break;
 
-			switch ( $featured_image_type ) {
-				// custom url
-				case 'url':
-					$thumbnail_id = $this->maybe_generate_thumbnail();
-					$frontend = function_exists( 'Responsive_Lightbox' ) ? Responsive_Lightbox()->frontend : null;
-					$custom_url = isset( $post_data['_rl_thumbnail_url'] ) ? $post_data['_rl_thumbnail_url'] : '';
-					if ( $frontend && method_exists( $frontend, 'sanitize_remote_image_url' ) )
-						$featured_image = $frontend->sanitize_remote_image_url( $custom_url );
-					else
+					// first image
+					case 'image':
+						$thumbnail_id = $this->maybe_generate_thumbnail();
 						$featured_image = '';
+						break;
 
-					if ( $featured_image === '' )
-						$featured_image_type = 'image';
-					break;
+					// attachment ID, including the intentional zero clear
+					case 'id':
+						$submitted_thumbnail_id = isset( $post_data['_thumbnail_id'] ) ? $post_data['_thumbnail_id'] : null;
+						if ( is_int( $submitted_thumbnail_id ) && $submitted_thumbnail_id >= 0 )
+							$thumbnail_id = $submitted_thumbnail_id;
+						elseif ( is_string( $submitted_thumbnail_id ) && ctype_digit( $submitted_thumbnail_id ) )
+							$thumbnail_id = (int) $submitted_thumbnail_id;
+						else {
+							$update_featured_image = false;
+							break;
+						}
+						$featured_image = $thumbnail_id;
+				}
+			}
 
-				// first image
-				case 'image':
-					$thumbnail_id = $this->maybe_generate_thumbnail();
-					$featured_image = '';
-					break;
-
-				// attachment id
-				case 'id':
-				default:
-					$featured_image = $thumbnail_id = isset( $post_data['_thumbnail_id'] ) ? (int) $post_data['_thumbnail_id'] : 0;
+			if ( $update_featured_image ) {
+				if ( $preview ) {
+					update_metadata( 'post', $post_id, '_rl_featured_image_type', $featured_image_type );
+					update_metadata( 'post', $post_id, '_rl_featured_image', $featured_image );
+					update_metadata( 'post', $post_id, '_thumbnail_id', $thumbnail_id );
+				} else {
+					update_post_meta( $post_id, '_rl_featured_image_type', $featured_image_type );
+					update_post_meta( $post_id, '_rl_featured_image', $featured_image );
+					update_post_meta( $post_id, '_thumbnail_id', $thumbnail_id );
+				}
 			}
 		}
-
-		// preview?
-		if ( $preview ) {
-			update_metadata( 'post', $post_id, '_rl_featured_image_type', $featured_image_type );
-			update_metadata( 'post', $post_id, '_rl_featured_image', $featured_image );
-			update_metadata( 'post', $post_id, '_thumbnail_id', $thumbnail_id );
-		} else {
-			// update featured image
-			update_post_meta( $post_id, '_rl_featured_image_type', $featured_image_type );
-			update_post_meta( $post_id, '_rl_featured_image', $featured_image );
-			update_post_meta( $post_id, '_thumbnail_id', $thumbnail_id );
-
-			// save number of images
+		// Save image counts only when an images payload was intentionally processed.
+		if ( ! $preview && isset( $saved_tabs['images'] ) )
 			update_post_meta( $post_id, '_rl_images_count', $this->get_gallery_images_number( $post_id ) );
-		}
 
 		// update post excerpt
-		if ( isset( $safedata['misc']['options']['gallery_description'] ) ) {
+		if ( isset( $saved_tabs['misc']['options']['gallery_description'] ) ) {
 			remove_action( 'save_post_rl_gallery', [ $this, 'save_post' ], 10, 3 );
 
 			$postdata = [
 				'ID'			=> $post_id,
-				'post_excerpt'	=> sanitize_textarea_field( $safedata['misc']['options']['gallery_description'] )
+				'post_excerpt'	=> sanitize_textarea_field( $saved_tabs['misc']['options']['gallery_description'] )
 			];
 
 			wp_update_post( $postdata );

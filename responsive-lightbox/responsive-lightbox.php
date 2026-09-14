@@ -2,7 +2,9 @@
 /*
 Plugin Name: Responsive Lightbox & Gallery
 Description: Responsive Lightbox & Gallery allows users to create galleries and view larger versions of images, galleries and videos in a lightbox (overlay) effect optimized for mobile devices.
-Version: 2.7.8
+Version: 2.7.9
+Requires at least: 6.4
+Requires PHP: 7.4
 Author: dFactory
 Author URI: http://www.dfactory.co/
 Plugin URI: http://www.dfactory.co/products/responsive-lightbox/
@@ -45,7 +47,7 @@ include_once( RESPONSIVE_LIGHTBOX_PATH . 'includes' . DIRECTORY_SEPARATOR . 'fun
  * Responsive Lightbox class.
  *
  * @class Responsive_Lightbox
- * @version	2.7.8
+ * @version	2.7.9
  */
 class Responsive_Lightbox {
 
@@ -284,7 +286,7 @@ class Responsive_Lightbox {
 			'origin_left'		=> true,
 			'origin_top'		=> true
 		],
-		'version' => '2.7.8',
+		'version' => '2.7.9',
 		'activation_date' => ''
 	];
 	public $options = [];
@@ -310,6 +312,7 @@ class Responsive_Lightbox {
 	private $notices = [];
 	private $current_script = 'glightbox';
 	private static $_instance;
+	const REWRITE_FLUSH_PENDING = 'responsive_lightbox_rewrite_flush_pending';
 
 	// classes
 	public $folders;
@@ -320,6 +323,7 @@ class Responsive_Lightbox {
 	public $settings;
 	public $settings_api;
 	public $gallery_api;
+	public $bulk_actions;
 
 	/**
 	 * Class constructor.
@@ -329,6 +333,25 @@ class Responsive_Lightbox {
 	public function __construct() {
 		register_activation_hook( __FILE__, [ $this, 'activation' ] );
 		register_deactivation_hook( __FILE__, [ $this, 'deactivation' ] );
+
+		// WordPress 6.4+ can fetch these non-autoloaded constructor options in one query.
+		// Keep the function guard because supported older WordPress versions lack this helper.
+		$option_names = [
+			'responsive_lightbox_version',
+			'rl_settings',
+			'rl_configuration',
+			'responsive_lightbox_capabilities',
+			'responsive_lightbox_settings',
+			'responsive_lightbox_folders',
+			'responsive_lightbox_builder',
+			'responsive_lightbox_remote_library',
+			'responsive_lightbox_configuration',
+			'responsive_lightbox_basicgrid_gallery',
+			'responsive_lightbox_basicslider_gallery',
+			'responsive_lightbox_basicmasonry_gallery'
+		];
+		if ( function_exists( 'wp_prime_option_caches' ) )
+			wp_prime_option_caches( $option_names );
 
 		// change from older versions
 		$this->version = $db_version = get_option( 'responsive_lightbox_version' );
@@ -405,6 +428,7 @@ class Responsive_Lightbox {
 		add_action( 'after_setup_theme', [ $this, 'init_remote_libraries' ], 11 );
 		add_action( 'init', [ $this, 'load_textdomain' ] );
 		add_action( 'init', [ $this, 'init_galleries' ] );
+		add_action( 'init', [ $this, 'flush_deferred_rewrite_rules' ], 20 );
 		add_action( 'init', [ $this->folders, 'init_folders' ], 99 );
 		add_action( 'init', [ $this, 'init_gutenberg' ] );
 		add_action( 'admin_init', [ $this, 'update_notice' ] );
@@ -482,10 +506,12 @@ class Responsive_Lightbox {
 				// change to another site
 				switch_to_blog( (int) $blog_id );
 
-				// run current site activation process
-				$this->activate_site();
-
-				restore_current_blog();
+				try {
+					// run current site activation process
+					$this->activate_site();
+				} finally {
+					restore_current_blog();
+				}
 			}
 		} else
 			$this->activate_site();
@@ -519,8 +545,39 @@ class Responsive_Lightbox {
 		add_option( 'responsive_lightbox_remote_library', $this->defaults['remote_library'], '', false );
 		add_option( 'responsive_lightbox_version', $this->defaults['version'], '', false );
 
-		// permalinks
+		$this->flush_rewrite_rules_after_gallery_registration();
+	}
+
+	/**
+	 * Flush rewrite rules after registering gallery routes.
+	 *
+	 * The marker remains when an interrupted activation cannot complete the
+	 * flush. A later normal request consumes it after init_galleries().
+	 *
+	 * @return void
+	 */
+	private function flush_rewrite_rules_after_gallery_registration() {
+		update_option( self::REWRITE_FLUSH_PENDING, 1, false );
+
+		if ( ! post_type_exists( 'rl_gallery' ) ) {
+			$this->init_galleries();
+		}
+
 		flush_rewrite_rules();
+		delete_option( self::REWRITE_FLUSH_PENDING );
+	}
+
+	/**
+	 * Complete an activation rewrite flush interrupted before it could finish.
+	 *
+	 * @return void
+	 */
+	public function flush_deferred_rewrite_rules() {
+		if ( ! get_option( self::REWRITE_FLUSH_PENDING, false ) )
+			return;
+
+		flush_rewrite_rules();
+		delete_option( self::REWRITE_FLUSH_PENDING );
 	}
 
 	/**
@@ -543,10 +600,12 @@ class Responsive_Lightbox {
 				// change to another site
 				switch_to_blog( (int) $blog_id );
 
-				// run current site deactivation process
-				$this->deactivate_site( true );
-
-				restore_current_blog();
+				try {
+					// run current site deactivation process
+					$this->deactivate_site( true );
+				} finally {
+					restore_current_blog();
+				}
 			}
 		} else
 			$this->deactivate_site();
@@ -570,6 +629,10 @@ class Responsive_Lightbox {
 		// delete options if needed
 		if ( $check ) {
 			global $wp_roles;
+			$users = get_users( [
+				'blog_id' => get_current_blog_id(),
+				'capability' => 'edit_lightbox_settings',
+			] );
 
 			// remove all capabilities
 			foreach ( $wp_roles->roles as $role_name => $label ) {
@@ -580,13 +643,25 @@ class Responsive_Lightbox {
 				}
 			}
 
-			delete_option( 'responsive_lightbox_settings' );
-			delete_option( 'responsive_lightbox_configuration' );
-			delete_option( 'responsive_lightbox_folders' );
-			delete_option( 'responsive_lightbox_builder' );
-			delete_option( 'responsive_lightbox_capabilities' );
-			delete_option( 'responsive_lightbox_remote_library' );
-			delete_option( 'responsive_lightbox_version' );
+			// remove direct grants on this site without touching other user meta.
+			foreach ( $users as $user )
+				$user->remove_cap( 'edit_lightbox_settings' );
+
+			foreach ( [
+				'responsive_lightbox_settings',
+				'responsive_lightbox_configuration',
+				'responsive_lightbox_folders',
+				'responsive_lightbox_builder',
+				'responsive_lightbox_capabilities',
+				'responsive_lightbox_remote_library',
+				'responsive_lightbox_version',
+				'responsive_lightbox_basicgrid_gallery',
+				'responsive_lightbox_basicslider_gallery',
+				'responsive_lightbox_basicmasonry_gallery',
+				'responsive_lightbox_activation_date',
+				self::REWRITE_FLUSH_PENDING,
+			] as $option )
+				delete_option( $option );
 		}
 
 		// permalinks
@@ -1723,16 +1798,12 @@ class Responsive_Lightbox {
 	 * @return void
 	 */
 	public function init_gutenberg() {
-		global $wp_version;
-
 		// actions
+		$this->register_gutenberg_blocks();
 		add_action( 'enqueue_block_editor_assets', [ $this, 'gutenberg_enqueue_scripts' ] );
 
 		// filters
-		if ( version_compare( $wp_version, '5.8', '>=' ) )
-			add_filter( 'block_categories_all', [ $this, 'block_category' ] );
-		else
-			add_filter( 'block_categories', [ $this, 'block_category' ] );
+		add_filter( 'block_categories_all', [ $this, 'block_category' ] );
 	}
 
 	/**
@@ -1753,31 +1824,27 @@ class Responsive_Lightbox {
 	}
 
 	/**
-	 * Extend Gutenberg.
+	 * Register block metadata and editor assets.
+	 *
+	 * @return void
+	 */
+	public function register_gutenberg_blocks() {
+		$dependencies = [ 'wp-blocks', 'wp-i18n', 'wp-element', 'wp-components', 'wp-data', 'wp-block-editor' ];
+
+		wp_register_script( 'responsive-lightbox-block-editor-script', RESPONSIVE_LIGHTBOX_URL . '/js/gutenberg.js', $dependencies, $this->defaults['version'], true );
+		wp_register_style( 'responsive-lightbox-block-editor-styles', RESPONSIVE_LIGHTBOX_URL . '/css/gutenberg.css', [], $this->defaults['version'] );
+
+		register_block_type( RESPONSIVE_LIGHTBOX_PATH . 'blocks/gallery' );
+		register_block_type( RESPONSIVE_LIGHTBOX_PATH . 'blocks/remote-library-image' );
+	}
+
+	/**
+	 * Enqueue editor-only gallery modal assets.
 	 *
 	 * @return void
 	 */
 	public function gutenberg_enqueue_scripts() {
 		global $pagenow;
-
-		// block editor dependencies
-		$dependencies = [ 'wp-blocks', 'wp-i18n', 'wp-element', 'wp-components', 'wp-data', 'wp-block-editor' ];
-
-		// widgets page?
-		if ( $pagenow === 'widgets.php' )
-			$dependencies[] = 'wp-edit-widgets';
-		// customizer?
-		elseif ( $pagenow === 'customize.php' )
-			$dependencies[] = 'wp-customize-widgets';
-		// post page?
-		else
-			$dependencies[] = 'wp-editor';
-
-		// enqueue script
-		wp_enqueue_script( 'responsive-lightbox-block-editor-script', RESPONSIVE_LIGHTBOX_URL . '/js/gutenberg.js', $dependencies, $this->defaults['version'] );
-
-		// enqueue styles
-		wp_enqueue_style( 'responsive-lightbox-block-editor-styles', RESPONSIVE_LIGHTBOX_URL . '/css/gutenberg.css', '', $this->defaults['version'] );
 
 		// prepare script data
 		$script_data = [
@@ -1788,22 +1855,6 @@ class Responsive_Lightbox {
 
 		// enqueue gallery
 		$this->galleries->enqueue_gallery_scripts_styles();
-
-		// register gallery block
-		register_block_type(
-			'responsive-lightbox/gallery',
-			[
-				'editor_script' => 'block-editor-script'
-			]
-		);
-
-		// register remote library image block
-		register_block_type(
-			'responsive-lightbox/remote-library-image',
-			[
-				'editor_script' => 'block-editor-script'
-			]
-		);
 	}
 
 	/**
@@ -2191,36 +2242,68 @@ class Responsive_Lightbox {
 			return true;
 		}
 
-		// Get client IP with fallbacks for various server configurations
-		$client_ip = '127.0.0.1';
-		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
-			$client_ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
-		} elseif ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-			// Handle proxied requests - extract first IP if multiple are present
-			$forwarded_ips = explode( ',', sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) );
-			$client_ip = trim( $forwarded_ips[0] );
-		} elseif ( ! empty( $_SERVER['HTTP_CLIENT_IP'] ) ) {
-			$client_ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_CLIENT_IP'] ) );
-		}
-
-		// Validate IP address format
-		if ( ! filter_var( $client_ip, FILTER_VALIDATE_IP ) ) {
-			$client_ip = '127.0.0.1';
+		// Anonymous requests use only the server-restored connecting peer address.
+		// Forwarding headers are attacker-controlled without an approved trusted proxy boundary.
+		$client_ip = 'rl-anon-shared';
+		if ( isset( $_SERVER['REMOTE_ADDR'] ) && is_string( $_SERVER['REMOTE_ADDR'] ) ) {
+			$remote_addr = strtolower( trim( $_SERVER['REMOTE_ADDR'] ) );
+			if ( $remote_addr !== '' && filter_var( $remote_addr, FILTER_VALIDATE_IP ) )
+				$client_ip = $remote_addr;
 		}
 
 		$transient_key = 'rl_rate_limit_' . $action . '_' . ( $current_user_id ? $current_user_id : md5( $client_ip ) );
+		$window_key = $transient_key . '_window_end';
 		$requests = get_transient( $transient_key );
+		$now = apply_filters( 'rl_rate_limit_time', time() );
+		$now = is_numeric( $now ) ? (int) $now : time();
 
-		if ( false === $requests ) {
+		// Keep the established integer count shape so mixed-version caches remain safe.
+		if ( false === $requests || ! is_int( $requests ) || $requests < 1 ) {
+			$window_end = $now + $time_window;
 			set_transient( $transient_key, 1, $time_window );
+			set_transient( $window_key, $window_end, $time_window );
 			return true;
 		}
 
-		if ( $requests >= $max_requests ) {
-			return false;
+		$window_end = get_transient( $window_key );
+		if ( is_numeric( $window_end ) && (int) $window_end <= $now ) {
+			$window_end = $now + $time_window;
+			set_transient( $transient_key, 1, $time_window );
+			set_transient( $window_key, $window_end, $time_window );
+			return true;
 		}
 
-		set_transient( $transient_key, $requests + 1, $time_window );
+		if ( ! is_numeric( $window_end ) ) {
+			// Integer-only entries are from the prior sliding-window implementation
+			// or a cache that lost its TTL. Establish a finite fixed end even when
+			// the count is already at the limit, so it can recover at that boundary.
+			$window_end = $now + $time_window;
+			set_transient( $window_key, $window_end, $time_window );
+
+			if ( $requests >= $max_requests ) {
+				set_transient( $transient_key, $requests, $time_window );
+				return false;
+			}
+
+			set_transient( $transient_key, $requests + 1, $time_window );
+			return true;
+		}
+
+		$window_end = (int) $window_end;
+		if ( $requests >= $max_requests )
+			return false;
+
+		// Re-save only the count. Its TTL is capped at the original window end;
+		// the companion transient remains untouched by accepted and denied requests.
+		$remaining = $window_end - $now;
+		if ( $remaining <= 0 ) {
+			$window_end = $now + $time_window;
+			set_transient( $transient_key, 1, $time_window );
+			set_transient( $window_key, $window_end, $time_window );
+			return true;
+		}
+
+		set_transient( $transient_key, $requests + 1, $remaining );
 		return true;
 	}
 }

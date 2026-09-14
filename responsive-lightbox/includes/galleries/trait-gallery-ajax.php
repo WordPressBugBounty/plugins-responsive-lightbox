@@ -53,17 +53,35 @@ trait Responsive_Lightbox_Gallery_Ajax {
 
 			// check preview
 			$preview = ( $_POST['preview'] === 'true' );
-
-			echo $this->gallery_shortcode(
-				[
-					'id'			=> (int) $_POST['gallery_id'],
-					'gallery_no'	=> (int) $_POST['gallery_no'],
-					'preview'		=> $preview
-				]
-			);
+			echo $this->get_gallery_page_content( (int) $_POST['gallery_id'], (int) $_POST['gallery_no'], $preview );
 		}
 
 		exit;
+	}
+
+	/**
+	 * Render a pagination response after applying the same visibility policy as
+	 * the initial gallery request.
+	 *
+	 * @param int $gallery_id Gallery post ID.
+	 * @param int $gallery_no Gallery instance number.
+	 * @param bool $preview Whether this is a preview request.
+	 * @return string
+	 */
+	public function get_gallery_page_content( $gallery_id, $gallery_no, $preview = false ) {
+		$access_context = $preview ? 'pagination_preview' : 'frontend';
+
+		if ( ! $this->can_render_gallery( $gallery_id, $access_context ) )
+			return '';
+
+		return $this->gallery_shortcode(
+			[
+				'id'				=> (int) $gallery_id,
+				'gallery_no'		=> (int) $gallery_no,
+				'preview'			=> $preview,
+				'access_context'	=> $access_context
+			]
+		);
 	}
 
 	/**
@@ -93,6 +111,9 @@ trait Responsive_Lightbox_Gallery_Ajax {
 
 		// parse gallery id
 		$gallery_id = (int) $_POST['gallery_id'];
+
+		if ( ! $this->can_render_gallery( $gallery_id, 'editor_preview' ) )
+			wp_send_json_error();
 
 		// get gallery data
 		$data = get_post_meta( $gallery_id, '_rl_images', true );
@@ -301,6 +322,9 @@ trait Responsive_Lightbox_Gallery_Ajax {
 
 		// check user privileges
 		if ( ! current_user_can( 'edit_post', $post_id ) || ! current_user_can( 'upload_files' ) )
+			wp_send_json_error();
+
+		if ( ! $this->can_render_gallery( $post_id, 'editor_preview' ) )
 			wp_send_json_error();
 
 		// get query args

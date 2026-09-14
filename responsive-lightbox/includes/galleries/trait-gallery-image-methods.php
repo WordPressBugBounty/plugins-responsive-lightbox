@@ -175,7 +175,8 @@ trait Responsive_Lightbox_Galleries_Image_Methods {
 						$atts_args = [];
 
 					// get attachment ids
-					$attachments = ! empty( $data[$menu_item]['attachments']['ids'] ) ? $this->check_attachments( array_unique( array_filter( $data[$menu_item]['attachments']['ids'] ) ), $atts_args ) : [];
+					$attachment_ids = isset( $data[$menu_item]['attachments']['ids'] ) ? $data[$menu_item]['attachments']['ids'] : [];
+					$attachments = is_array( $attachment_ids ) && ! empty( $attachment_ids ) ? $this->check_attachments( array_unique( array_filter( $attachment_ids ) ), $atts_args ) : [];
 
 					// filter attachments
 					$attachments = apply_filters( 'rl_get_gallery_images_attachments', $attachments, $atts_args );

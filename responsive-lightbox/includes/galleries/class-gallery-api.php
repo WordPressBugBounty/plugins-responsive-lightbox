@@ -528,10 +528,14 @@ class Responsive_Lightbox_Gallery_API {
 		echo '<table class="form-table rl-galleries-table">';
 
 		// Render hidden menu_item input for legacy save compatibility (skip for config tab as radios provide the value)
-		if ( $menu_item && $tab_id !== 'config' ) {
-			$menu_item_name = sprintf( 'rl_gallery[%s][menu_item]', $tab_id );
-			echo '<input type="hidden" name="' . esc_attr( $menu_item_name ) . '" value="' . esc_attr( $menu_item ) . '" />';
-		}
+			if ( $menu_item && $tab_id !== 'config' ) {
+				$menu_item_name = sprintf( 'rl_gallery[%s][menu_item]', $tab_id );
+				echo '<input type="hidden" name="' . esc_attr( $menu_item_name ) . '" value="' . esc_attr( $menu_item ) . '" />';
+			}
+
+			// Mark the rendered tab/menu as complete so the save boundary can distinguish it from partial requests.
+			$submission_name = sprintf( 'rl_gallery_submission[%s][%s]', $tab_id, $menu_item );
+			echo '<input type="hidden" name="' . esc_attr( $submission_name ) . '" value="complete" />';
 
 		foreach ( $fields as $field_key => $field ) {
 			// Defensive: Skip malformed field entries from filtered data BEFORE any array access

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "responsive-lightbox/remote-library-image",
+  "title": "Remote Library Image",
+  "description": "Remote Library images",
+  "category": "responsive-lightbox",
+  "icon": "format-image",
+  "keywords": ["image", "photo"],
+  "textdomain": "responsive-lightbox",
+  "editorScript": "responsive-lightbox-block-editor-script",
+  "editorStyle": "responsive-lightbox-block-editor-styles",
+  "attributes": {
+    "imageURL": {
+      "type": "string",
+      "default": ""
+    },
+    "imageID": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+}
