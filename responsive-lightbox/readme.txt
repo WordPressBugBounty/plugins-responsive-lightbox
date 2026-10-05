@@ -4,7 +4,7 @@ Donate link: http://www.dfactory.co/
 Tags: gallery, galleries, lightbox, image, images
 Requires at least: 6.4
 Tested up to: 7.1
-Stable tag: 2.7.9
+Stable tag: 2.7.10
 Requires PHP: 7.4
 License: MIT License
 License URI: http://opensource.org/licenses/MIT
@@ -139,6 +139,16 @@ Responsive Lightbox and Gallery plugin comes with many styles and effects alread
 2. screenshot-2.jpg
 
 == Changelog ==
+
+= 2.7.10 =
+* Security: Prevent stored XSS through image link title attributes, GLightbox slide options (title, description, inline content, URL and video settings) and Nivo HiDPI image sources.
+* Fix: Bound URL caches, clear legacy arrays on upgrade, and remove the caches when plugin data is deleted.
+* Fix: Avoid cropped-image fallback lookups for URLs outside the site's uploads directory.
+* Fix: Restore WordPress "Select All" checkboxes on admin screens that load Media Folders scripts, such as the Media Library list and the Updates screen.
+* Fix: Restore WordPress admin menu expand/collapse controls when Media Folders scripts load before the page header.
+* Fix: Open media modals outside the Media Library on All Files instead of the last folder selected in the Media Library.
+* Tweak: Skip lightbox content and link rewriting on ordinary admin screens while retaining AJAX previews.
+* Tweak: Run the full Media Folders library setup only on the Media Library screen.
 
 = 2.7.9 =
 * Security: Harden authorization, rate limiting, and sanitization across Media Folders, Remote Library, gallery visibility, and gallery save paths
@@ -645,5 +655,8 @@ Initial release
 
 == Upgrade Notice ==
 
+= 2.7.10 =
+Security update for lightbox titles, GLightbox slide options and Nivo HiDPI image sources. Clears legacy URL caches and rebuilds them with bounded entries; gallery previews continue to work in admin AJAX.
+
 = 2.7.9 =
-Security hardening for Media Folders, Remote Library, gallery visibility, and gallery save paths, plus fixes for URL rewriting, attachment cache freshness, gallery metadata saves, activation cleanup, and the gallery editor. Improves WordPress 7.1 compatibility and raises minimum requirements to WordPress 6.4 / PHP 7.4.
+Security hardening for Media Folders, Remote Library, gallery visibility, and gallery save paths, plus fixes for URL rewriting, attachment cache freshness, gallery metadata saves, activation cleanup, and the gallery editor.

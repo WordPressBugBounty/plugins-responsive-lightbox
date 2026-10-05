@@ -821,7 +821,12 @@ class Responsive_Lightbox_Folders {
 			if ( $term_id < 0 )
 				return $query;
 		} else {
-			// no filter sent -- apply stored user preference for the initial grid query
+			// no filter sent -- apply stored user preference only for the initial media library grid query
+			$referer = wp_get_raw_referer();
+
+			if ( ! $referer || basename( (string) wp_parse_url( $referer, PHP_URL_PATH ) ) !== 'upload.php' )
+				return $query;
+
 			$stored = $this->get_selected_term_option();
 
 			if ( $stored === false || $stored === '' || $stored === 'all' )
@@ -1707,7 +1712,8 @@ class Responsive_Lightbox_Folders {
 			return;
 
 		// main script dependencies
-		$dependencies = [ 'jquery', 'underscore', 'jquery-ui-draggable', 'jquery-ui-droppable', 'media-models', 'tags-suggest' ];
+		// no tags-suggest: it depends on common, which breaks when printed in the header
+		$dependencies = [ 'jquery', 'underscore', 'jquery-ui-draggable', 'jquery-ui-droppable', 'media-models' ];
 
 		// create folder counters
 		$counters = [];

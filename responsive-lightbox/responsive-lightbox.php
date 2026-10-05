@@ -2,7 +2,7 @@
 /*
 Plugin Name: Responsive Lightbox & Gallery
 Description: Responsive Lightbox & Gallery allows users to create galleries and view larger versions of images, galleries and videos in a lightbox (overlay) effect optimized for mobile devices.
-Version: 2.7.9
+Version: 2.7.10
 Requires at least: 6.4
 Requires PHP: 7.4
 Author: dFactory
@@ -47,7 +47,7 @@ include_once( RESPONSIVE_LIGHTBOX_PATH . 'includes' . DIRECTORY_SEPARATOR . 'fun
  * Responsive Lightbox class.
  *
  * @class Responsive_Lightbox
- * @version	2.7.9
+ * @version	2.7.10
  */
 class Responsive_Lightbox {
 
@@ -286,7 +286,7 @@ class Responsive_Lightbox {
 			'origin_left'		=> true,
 			'origin_top'		=> true
 		],
-		'version' => '2.7.9',
+		'version' => '2.7.10',
 		'activation_date' => ''
 	];
 	public $options = [];
@@ -338,6 +338,7 @@ class Responsive_Lightbox {
 		// Keep the function guard because supported older WordPress versions lack this helper.
 		$option_names = [
 			'responsive_lightbox_version',
+			'responsive_lightbox_url_cache_version',
 			'rl_settings',
 			'rl_configuration',
 			'responsive_lightbox_capabilities',
@@ -655,6 +656,7 @@ class Responsive_Lightbox {
 				'responsive_lightbox_capabilities',
 				'responsive_lightbox_remote_library',
 				'responsive_lightbox_version',
+				'responsive_lightbox_url_cache_version',
 				'responsive_lightbox_basicgrid_gallery',
 				'responsive_lightbox_basicslider_gallery',
 				'responsive_lightbox_basicmasonry_gallery',
@@ -662,6 +664,8 @@ class Responsive_Lightbox {
 				self::REWRITE_FLUSH_PENDING,
 			] as $option )
 				delete_option( $option );
+
+			$this->frontend->delete_url_caches();
 		}
 
 		// permalinks
