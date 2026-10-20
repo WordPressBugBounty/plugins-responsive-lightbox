@@ -2,7 +2,7 @@
 /*
 Plugin Name: Responsive Lightbox & Gallery
 Description: Responsive Lightbox & Gallery allows users to create galleries and view larger versions of images, galleries and videos in a lightbox (overlay) effect optimized for mobile devices.
-Version: 2.7.10
+Version: 2.7.11.1
 Requires at least: 6.4
 Requires PHP: 7.4
 Author: dFactory
@@ -47,7 +47,7 @@ include_once( RESPONSIVE_LIGHTBOX_PATH . 'includes' . DIRECTORY_SEPARATOR . 'fun
  * Responsive Lightbox class.
  *
  * @class Responsive_Lightbox
- * @version	2.7.10
+ * @version	2.7.11
  */
 class Responsive_Lightbox {
 
@@ -286,7 +286,7 @@ class Responsive_Lightbox {
 			'origin_left'		=> true,
 			'origin_top'		=> true
 		],
-		'version' => '2.7.10',
+		'version' => '2.7.11',
 		'activation_date' => ''
 	];
 	public $options = [];

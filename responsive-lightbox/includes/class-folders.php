@@ -818,7 +818,10 @@ class Responsive_Lightbox_Folders {
 
 			$term_id = (int) $term_id;
 
-			if ( $term_id < 0 )
+			// Page URLs use -1 for Root Folder; AJAX filters use 0.
+			if ( $term_id === -1 )
+				$term_id = 0;
+			elseif ( $term_id < 0 )
 				return $query;
 		} else {
 			// no filter sent -- apply stored user preference only for the initial media library grid query

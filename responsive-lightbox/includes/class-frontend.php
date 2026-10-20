@@ -2966,7 +2966,7 @@ class Responsive_Lightbox_Frontend {
 		
 		// Basic Slider
 		// scripts
-		wp_register_script( 'responsive-lightbox-basicslider',  plugins_url( 'assets/splide/splide.min.js', dirname( __FILE__ ) ), [], '4.1.4', $rl->options['settings']['loading_place'] === 'footer' );
+		wp_register_script( 'responsive-lightbox-basicslider', plugins_url( 'js/splide.js', dirname( __FILE__ ) ), [], $rl->defaults['version'], $rl->options['settings']['loading_place'] === 'footer' );
 		wp_register_script( 'responsive-lightbox-basicslider-gallery', plugins_url( 'js/front-basicslider.js', dirname( __FILE__ ) ), [ 'jquery', 'responsive-lightbox-basicslider' ], $rl->defaults['version'], $rl->options['settings']['loading_place'] === 'footer' );
 
 		// load script data?

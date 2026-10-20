@@ -4,7 +4,7 @@ Donate link: http://www.dfactory.co/
 Tags: gallery, galleries, lightbox, image, images
 Requires at least: 6.4
 Tested up to: 7.1
-Stable tag: 2.7.10
+Stable tag: 2.7.11.1
 Requires PHP: 7.4
 License: MIT License
 License URI: http://opensource.org/licenses/MIT
@@ -139,6 +139,16 @@ Responsive Lightbox and Gallery plugin comes with many styles and effects alread
 2. screenshot-2.jpg
 
 == Changelog ==
+
+= 2.7.11.1 =
+* Fix: Add missing js/splidejs file
+
+= 2.7.11 =
+* Fix: Show only unfiled media when refreshing Root Folder in the Media Library grid.
+* Fix: Isolate compiled scripts to prevent variable collisions affecting mixed Masonry/Slider galleries, color pickers, and admin integrations.
+* Fix: Insert galleries into Gallery blocks independently of editor script loading order, and clear cancelled gallery selections.
+* Fix: Ignore delayed gallery-list responses after switching, filtering, or closing the gallery picker.
+* Fix: Preserve Gallery and Remote Library Image blocks saved before or after the Block API v3 migration.
 
 = 2.7.10 =
 * Security: Prevent stored XSS through image link title attributes, GLightbox slide options (title, description, inline content, URL and video settings) and Nivo HiDPI image sources.
@@ -655,8 +665,5 @@ Initial release
 
 == Upgrade Notice ==
 
-= 2.7.10 =
-Security update for lightbox titles, GLightbox slide options and Nivo HiDPI image sources. Clears legacy URL caches and rebuilds them with bounded entries; gallery previews continue to work in admin AJAX.
-
-= 2.7.9 =
-Security hardening for Media Folders, Remote Library, gallery visibility, and gallery save paths, plus fixes for URL rewriting, attachment cache freshness, gallery metadata saves, activation cleanup, and the gallery editor.
+= 2.7.11 =
+Fixes gallery block insertion and saved-block compatibility, script conflicts affecting galleries and admin controls, and Root Folder filtering after a Media Library grid refresh.
